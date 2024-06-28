@@ -607,9 +607,9 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     """
     if strategic:
         # Ali    
-        coef_ = modelhat.pos_regressor.coef_
-        intercept_ = modelhat.pos_regressor.intercept_ 
-        y_pred = modelhat.pos_regressor.predict(X)
+        coef_ = modelhat.regressor.coef_
+        intercept_ = modelhat.regressor.intercept_ 
+        y_pred = modelhat.regressor.predict(X)
         norm_coef = np.linalg.norm(coef_)
         dist =  np.abs(np.dot(X, coef_) + intercept_) / norm_coef
         
