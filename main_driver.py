@@ -81,14 +81,14 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
             7: 'Bike', 8: 'Credit', 9: 'Fires', 10: 'Wine', 11: 'Heart', 12: 'Marketing(Small)', 13: 'Marketing(Full)',
             14: 'COMPAS_race_and_gender',
             0: 'Synthetic'}
-data_index = 2  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 5  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
 read_from_file = False  # If we should read pre-computed numpy matrices from a file - OVERRIDES the above if set to True
-save_data = False  # Whether or not data from setting up matrices should be is saved to the specified directory
+save_data = True  # Whether or not data from setting up matrices should be is saved to the specified directory
 file_dir = 'vectorized_datasets'  # Directory for files containing vectorized datasets to read from/write to
-file_name = '<INSERT NAME HERE>.npz'  # File name within file_dir from which to read or write data, should be .npz file
+file_name = 'adults.npz'  # File name within file_dir from which to read or write data, should be .npz file
 file_path = os.path.join(file_dir, file_name)
 
 # Synthetic Data Settings  (NOTE: only used if data_index = 0 and use_preconfigured_dataset = True)
@@ -210,7 +210,7 @@ if __name__ == '__main__':
         equal_error_tag = '_equal-error' if equal_error else ''
         solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
         model_tag = model_name_shortener.get(model_type, model_type)
-        dirname = f'{outer_directory}/{model_tag}{solver_tag}_a={a}_b={b}_T={numsteps}_' + dataname_extension \
+        dirname = f'{outer_directory}/{model_tag}{solver_tag}_a={a}_b={b}_T={numsteps}_strategic={strategic}_tau={tau}_' + dataname_extension \
                   + f'{error_tag}{equal_error_tag}'
 
     if not use_multiple_gammas:

@@ -342,6 +342,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
                 #Change this to dot product later
                 tau_local = np.sum(tau * groupweights[0][i])
                 modelhat.pos_regressor.intercept_ = modelhat.pos_regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.pos_regressor.coef_))
+                #Ali: We can delete this line? 
                 modelhat.neg_regressor.intercept_ = modelhat.neg_regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.neg_regressor.coef_))	
         elif model_type == 'MLPClassifier':  # Pytorch's MLP wrapped with our custom class to work with the interface
             hidden_sizes = [numdims] + \
@@ -607,9 +608,19 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """
     if strategic:
-        dist = np.abs(modelhat.pos_regressor.predict(X).ravel()/np.linalg.norm(modelhat.pos_regressor.predict(X)))
-        move = dist < tau 
-        strat_x = np.array([(elem + tau)*(modelhat.pos_regressor.coef_/np.linalg.norm(modelhat.pos_regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
+        # Ali    
+        coef_ = modelhat.pos_regressor.coef_
+        intercept_ = modelhat.pos_regressor.intercept_ 
+        y_pred = modelhat.pos_regressor.predict(X)
+        norm_coef = np.linalg.norm(coef_)
+        dist =  np.abs(np.dot(X, coef_) + intercept_) / norm_coef
+        
+        move = (dist < tau) & (y_pred < 0)   
+        strat_x = np.array([x - (np.dot(coef_, x) + intercept_) / np.linalg.norm(coef_)**2 * coef_ if move[i] else x for i, x in enumerate(X)])
+
+        #dist = np.abs(modelhat.pos_regressor.predict(X).ravel()/np.linalg.norm(modelhat.pos_regressor.predict(X)))
+        #move = dist < tau 
+        #strat_x = np.array([(elem + tau)*(modelhat.pos_regressor.coef_/np.linalg.norm(modelhat.pos_regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
         yhat = modelhat.predict(strat_x).ravel() 
     else:
         yhat = modelhat.predict(X).ravel()  # Compute predictions for the newly trained model
