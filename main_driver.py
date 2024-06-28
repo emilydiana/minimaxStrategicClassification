@@ -13,7 +13,7 @@ import random
 import os
 import warnings
 
-strategic = True 
+strategic = False 
 tau = 0.005
 
 # MODEL/SIMULATION Settings

@@ -19,8 +19,7 @@ class PairedRegressionClassifier:
                                 Must train with .fit(X, y) and predict with .predict(X)
                                 Defaults to linear regression if no arguments are provided.
         """
-        self.pos_regressor = regressor_class()
-        self.neg_regressor = regressor_class()
+        self.regressor = regressor_class()
 
     def fit(self, X, y, w):
         """
@@ -34,13 +33,9 @@ class PairedRegressionClassifier:
         :return: The trained classifier
         """
         # Creates appropriate label matrices
-        y_pos = y * w  # Put 0s where there is a 0 in y, replace 1s with sample weight. Element wise multiply
-        y_neg = (1 - y) * w  # Swaps the 0s and 1s with 1-y, then replaces the 1s with sample weights
-        y_pos = y_pos - y_neg
-        y_neg = y_neg - y_neg 
+        costs = y * w - (1 - y) * w  # Put 0s where there is a 0 in y, replace 1s with sample weight. Element wise multiply
         # Fits the two models
-        self.pos_regressor.fit(X, y_pos)
-        self.neg_regressor.fit(X, y_neg)
+        self.regressor.fit(X, costs)
 
         return self
 
@@ -49,7 +44,6 @@ class PairedRegressionClassifier:
         :param X: Feature matrix to make predictions on
         :return: array of predicted labels
         """
-        yhat_pos = self.pos_regressor.predict(X)
-        yhat_neg = self.neg_regressor.predict(X)
-        return yhat_pos > yhat_neg  # True (1) when yhat_pos > yhat_neg, otherwise False (0)
+        yhat = self.regressor.predict(X)
+        return yhat > 0  # True (1) when yhat_pos > yhat_neg, otherwise False (0)
 
