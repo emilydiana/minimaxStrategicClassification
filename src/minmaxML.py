@@ -613,7 +613,7 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
         norm_coef = np.linalg.norm(coef_)
         dist =  np.abs(np.dot(X, coef_) + intercept_) / norm_coef
         
-        move = (dist < tau) & (y_pred < 0)   
+        move = (dist < tau) & (y_pred == 0)   
         strat_x = np.array([x - (np.dot(coef_, x) + intercept_) / np.linalg.norm(coef_)**2 * coef_ if move[i] else x for i, x in enumerate(X)])
 
         #dist = np.abs(modelhat.regressor.predict(X).ravel()/np.linalg.norm(modelhat.regressor.predict(X)))

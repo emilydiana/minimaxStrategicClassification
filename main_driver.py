@@ -14,14 +14,14 @@ import os
 import warnings
 
 strategic = False 
-tau = 0.005
+tau = 0.05
 
 # MODEL/SIMULATION Settings
 models = {1: 'LinearRegression', 2: 'LogisticRegression', 3: 'Perceptron', 4: 'PairedRegressionClassifier',
           5: 'MLPClassifier'}  # WARNING: MLPClassifier is not GPU optimized and may run slowly
 model_index = 4  # Set this to select a model type according to the mapping above
 
-numsteps = 2000  # number of steps for learning/game
+numsteps = 5000  # number of steps for learning/game
 # NOTE: eta = a * t^(-b) on the t-th round of the game
 a = 1  # Multiplicative coefficient on parametrized learning rate
 b = 1 / 2  # Negative exponent on parameterized learning rate
@@ -81,7 +81,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
             7: 'Bike', 8: 'Credit', 9: 'Fires', 10: 'Wine', 11: 'Heart', 12: 'Marketing(Small)', 13: 'Marketing(Full)',
             14: 'COMPAS_race_and_gender',
             0: 'Synthetic'}
-data_index = 5  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 1  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
