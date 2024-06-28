@@ -341,8 +341,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
             if strategic:
                 #Change this to dot product later
                 tau_local = np.sum(tau * groupweights[0][i])
-                modelhat.pos_regressor.intercept_ = modelhat.pos_regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.pos_regressor.coef_))
-                modelhat.neg_regressor.intercept_ = modelhat.neg_regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.neg_regressor.coef_))	
+                modelhat.regressor.intercept_ = modelhat.regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.regressor.coef_))
         elif model_type == 'MLPClassifier':  # Pytorch's MLP wrapped with our custom class to work with the interface
             hidden_sizes = [numdims] + \
                            list(map(lambda x: x if np.floor(x) == x else int(np.floor(x * numdims)), hidden_sizes))
@@ -607,9 +606,9 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """
     if strategic:
-        dist = np.abs(modelhat.pos_regressor.predict(X).ravel()/np.linalg.norm(modelhat.pos_regressor.predict(X)))
+        dist = np.abs(modelhat.regressor.predict(X).ravel()/np.linalg.norm(modelhat.regressor.predict(X)))
         move = dist < tau 
-        strat_x = np.array([(elem + tau)*(modelhat.pos_regressor.coef_/np.linalg.norm(modelhat.pos_regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
+        strat_x = np.array([(elem + tau)*(modelhat.regressor.coef_/np.linalg.norm(modelhat.regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
         yhat = modelhat.predict(strat_x).ravel() 
     else:
         yhat = modelhat.predict(X).ravel()  # Compute predictions for the newly trained model
