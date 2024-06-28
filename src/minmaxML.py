@@ -23,7 +23,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
                 group_names=(), group_types=(), data_name='',
                 display_plots=True, verbose=False, use_input_commands=True,
                 show_legend=True,
-                save_models=False, save_plots=False, dirname='', strategic=False, tau=0):
+                save_models=False, save_plots=False, dirname='', strategic_learner=False, strategic_agent=False, tau=0):
     """
     :param X:  numpy matrix of features with dimensions numsamples x numdims
     :param y:  numpy array of labels with length numsamples. Should be numeric (0/1 labels binary classification)
@@ -338,7 +338,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
         elif model_type == 'PairedRegressionClassifier':
             # NOTE: This is not an sklearn model_class, but a custom class
             modelhat = model_class(regressor_class=LinearRegression).fit(X_train, y_train, avg_sampleweights)
-            if strategic:
+            if strategic_learner:
                 #Change this to dot product later
                 tau_local = np.sum(tau * groupweights[0][i])
                 modelhat.regressor.intercept_ = modelhat.regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.regressor.coef_))
@@ -368,16 +368,16 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
 
         elif model_type in classification_models:
             # Updates errors array with the round-specific errors for each person for round t
-            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic, tau)
+            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau)
             # Compute the errors for all additional error types
             for err_type in extra_error_types:
-                compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C, strategic, tau)
+                compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C, strategic_agent, tau)
             # Repeat for validation
             if do_validation:
-                compute_model_errors(modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, strategic, tau)
+                compute_model_errors(modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, strategic_agent, tau)
                 for err_type in extra_error_types:
                     compute_model_errors(modelhat, X_test, y_test, t, val_specific_errors[err_type], err_type,
-                                         penalty, C, strategic, tau)
+                                         penalty, C, strategic_agent, tau)
         else:
             raise Exception(f'Invalid Model Type: {model_type}')
 
@@ -601,11 +601,11 @@ def create_stacked_bonus_plots(num_group_types, extra_error_types, numgroups, sp
     return bonus_plots
 
 
-def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', C=1.0, strategic=False, tau=0):
+def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', C=1.0, strategic_agent=False, tau=0):
     """
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """
-    if strategic:
+    if strategic_agent:
         # Ali    
         coef_ = modelhat.regressor.coef_
         intercept_ = modelhat.regressor.intercept_ 

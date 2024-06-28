@@ -13,7 +13,8 @@ import random
 import os
 import warnings
 
-strategic = False 
+strategic_learner = False
+strategic_agent = False 
 tau = 0.05
 
 # MODEL/SIMULATION Settings
@@ -81,7 +82,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
             7: 'Bike', 8: 'Credit', 9: 'Fires', 10: 'Wine', 11: 'Heart', 12: 'Marketing(Small)', 13: 'Marketing(Full)',
             14: 'COMPAS_race_and_gender',
             0: 'Synthetic'}
-data_index = 1  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 14  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -210,7 +211,7 @@ if __name__ == '__main__':
         equal_error_tag = '_equal-error' if equal_error else ''
         solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
         model_tag = model_name_shortener.get(model_type, model_type)
-        dirname = f'{outer_directory}/{model_tag}{solver_tag}_a={a}_b={b}_T={numsteps}_strategic={strategic}_tau={tau}_' + dataname_extension \
+        dirname = f'{outer_directory}/{model_tag}{solver_tag}_a={a}_b={b}_T={numsteps}_strategiclearner={strategic_learner}_strategicagent={strategic_agent}_tau={tau}_' + dataname_extension \
                   + f'{error_tag}{equal_error_tag}'
 
     if not use_multiple_gammas:
@@ -254,7 +255,7 @@ if __name__ == '__main__':
                     fit_intercept=fit_intercept, logistic_solver=logistic_solver,
                     max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
                     n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay, hidden_sizes=hidden_sizes,
-                    save_plots=save_plots, dirname=dirname, strategic=strategic, tau=tau)
+                    save_plots=save_plots, dirname=dirname, strategic_learner=strategic_learner, strategic_agent=strategic_agent, tau=tau)
 
     # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
     else:
