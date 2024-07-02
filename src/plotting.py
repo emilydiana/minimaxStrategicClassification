@@ -3,6 +3,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 from src.save_plots import save_plots_to_os
 
 
@@ -96,6 +97,11 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     points = np.zeros((len(x), 2))
     points[:, 0] = x
     points[:, 1] = y
+    
+    os.makedirs(dirname, exist_ok=True)
+    with open(os.path.join(f'{dirname}', "output.txt"), "w") as file:
+        for row in points:
+            file.write(" ".join(map(str, row)) + "\n")
 
     colors = np.arange(1, numsteps)
     plt.scatter(x, y, c=colors, s=2, label='Trajectory of Mixtures')
