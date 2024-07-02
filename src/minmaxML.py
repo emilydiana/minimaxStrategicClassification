@@ -9,6 +9,9 @@ from src.train_test_split import create_validation_split
 from src.torch_wrapper import MLPClassifier
 from src.plotting import do_plotting
 from src.save_models import save_models_to_os
+from sklearn.svm import LinearSVC
+from src.linear_svm import LinearSVM
+
 import warnings
 
 
@@ -58,7 +61,6 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
     :param n_epochs: number of epochs per individual MLP model
     :param hidden_sizes: list of sizes for hidden layers of MLP - fractions (and 1) treated as proportions of numdims
     """
-
     if not use_input_commands and display_plots:
         warnings.warn('WARNING: use_input_commands is set to False. '
                       'This may cause plots to appear and immediately dissappear when running code from the command '
@@ -119,11 +121,11 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
     # Modularizes the existing code to easily swap models with the argument "model_type"
     model_classes = {'LinearRegression': LinearRegression, 'LogisticRegression': LogisticRegression,
                      'PairedRegressionClassifier': PairedRegressionClassifier, 'Perceptron': Perceptron,
-                     'MLPClassifier': MLPClassifier}
+                     'MLPClassifier': MLPClassifier, 'LinearSVM': LinearSVM}
 
     regression_models = ['LinearRegression', 'MLPRegresor']
     classification_models = ['LogisticRegression', 'Perceptron', 'PairedRegressionClassifier',
-                             'MLPClassifier']
+                             'MLPClassifier', 'LinearSVM']
     try:
         model_class = model_classes[model_type]
         if model_type in classification_models:
@@ -335,12 +337,20 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
                                     verbose=0).fit(X_train, y_train, avg_sampleweights)
                 except Warning:
                     raise Exception(f'Logistic regression did not converge with {max_logi_iters} iterations.')
+        elif model_type == 'LinearSVM':
+            modelhat = LinearSVM(dual='auto').fit(X_train, y_train, sample_weight=avg_sampleweights)
+            if strategic_learner:
+                #Change this to dot product later
+                #tau_local = np.sum(tau * groupweights[0][i])
+                tau_local = tau
+                modelhat.intercept_ = modelhat.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.coef_))
         elif model_type == 'PairedRegressionClassifier':
             # NOTE: This is not an sklearn model_class, but a custom class
             modelhat = model_class(regressor_class=LinearRegression).fit(X_train, y_train, avg_sampleweights)
             if strategic_learner:
                 #Change this to dot product later
-                tau_local = np.sum(tau * groupweights[0][i])
+                #tau_local = np.sum(tau * groupweights[0][i])
+                tau_local = tau
                 modelhat.regressor.intercept_ = modelhat.regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.regressor.coef_))
         elif model_type == 'MLPClassifier':  # Pytorch's MLP wrapped with our custom class to work with the interface
             hidden_sizes = [numdims] + \
@@ -606,21 +616,39 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """
     if strategic_agent:
-        # Ali    
-        coef_ = modelhat.regressor.coef_
-        intercept_ = modelhat.regressor.intercept_ 
-        y_pred = modelhat.regressor.predict(X)
-        norm_coef = np.linalg.norm(coef_)
-        dist =  np.abs(np.dot(X, coef_) + intercept_) / norm_coef
+        coef_ = None
+        y_pred = np.zeros(len(X))
         
-        move = (dist < tau) & (y_pred == 0)   
-        strat_x = np.array([x - (np.dot(coef_, x) + intercept_) / np.linalg.norm(coef_)**2 * coef_ if move[i] else x for i, x in enumerate(X)])
+        if isinstance(modelhat, LinearSVM):
+            coef_ = modelhat.coef_
+            y_pred = modelhat.decision_function(X)
+        else:
+            coef_ = modelhat.regressor.coef_
+            y_pred = modelhat.regressor.predict(X)
+        
+            # Ali    
+            #coef_ = modelhat.regressor.coef_
+            #intercept_ = modelhat.regressor.intercept_ 
+            #y_pred = modelhat.regressor.predict(X)
+               
+            #norm_coef = np.linalg.norm(coef_)
+            #dist =  np.abs(y_pred) / norm_coef
+            
+            #move = (dist < tau) & (y_pred < 0)   
+            #strat_x = np.array([x - (np.dot(coef_, x) + intercept_) / np.linalg.norm(coef_)**2 * coef_ if move[i] else x for i, x in enumerate(X)])
+            
+            #dist = np.abs(modelhat.regressor.predict(X).ravel()/np.linalg.norm(modelhat.regressor.predict(X)))
+            #move = dist < tau 
+            #strat_x = np.array([(elem + tau)*(modelhat.regressor.coef_/np.linalg.norm(modelhat.regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
+        
+        norm_coef = np.linalg.norm(coef_)
+        dist =  np.abs(y_pred) / norm_coef    
+        move = (dist < tau) & (y_pred < 0)   
+        manipulation = np.outer(y_pred/norm_coef**2, coef_)    
+        stratX = np.copy(X)
+        stratX[move] = X[move] - manipulation[move] 
 
-        #dist = np.abs(modelhat.regressor.predict(X).ravel()/np.linalg.norm(modelhat.regressor.predict(X)))
-        #move = dist < tau 
-        #strat_x = np.array([(elem + tau)*(modelhat.regressor.coef_/np.linalg.norm(modelhat.regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
-
-        yhat = modelhat.predict(strat_x).ravel() 
+        yhat = modelhat.predict(stratX).ravel() 
     else:
         yhat = modelhat.predict(X).ravel()  # Compute predictions for the newly trained model
     # Compute the specified error type
