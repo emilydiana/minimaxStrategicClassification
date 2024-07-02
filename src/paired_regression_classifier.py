@@ -45,5 +45,5 @@ class PairedRegressionClassifier:
         :return: array of predicted labels
         """
         yhat = self.regressor.predict(X)
-        return yhat > 0  # True (1) when yhat_pos > yhat_neg, otherwise False (0)
+        return yhat >= 0  # True (1) when yhat >= 0, otherwise False (0)
 
