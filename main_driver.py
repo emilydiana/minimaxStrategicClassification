@@ -13,14 +13,14 @@ import random
 import os
 import warnings
 
-strategic_learner = False
-strategic_agent = False 
-tau = 0.05
+strategic_learner = True
+strategic_agent = True 
+tau = 5
 
 # MODEL/SIMULATION Settings
 models = {1: 'LinearRegression', 2: 'LogisticRegression', 3: 'Perceptron', 4: 'PairedRegressionClassifier',
-          5: 'MLPClassifier'}  # WARNING: MLPClassifier is not GPU optimized and may run slowly
-model_index = 4  # Set this to select a model type according to the mapping above
+          5: 'MLPClassifier', 6: 'LinearSVM'}  # WARNING: MLPClassifier is not GPU optimized and may run slowly
+model_index = 6  # Set this to select a model type according to the mapping above
 
 numsteps = 5000  # number of steps for learning/game
 # NOTE: eta = a * t^(-b) on the t-th round of the game
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
     # Define this list for later
     classification_models = ['LogisticRegression', 'Perceptron', 'PairedRegressionClassifier',
-                             'MLPClassifier']
+                             'MLPClassifier', 'LinearSVM']
 
     new_synthetic = False  # Needed for automatic data naming later
 
@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     # Allows us to give shorter names to our folders
     model_name_shortener = {'PairedRegressionClassifier': 'PRC', 'LinearRegression': 'LinReg',
-                            'LogisticRegression': 'LogReg'}
+                            'LogisticRegression': 'LogReg', 'LinearSVM': 'SVM'}
     # Set the directory name automatically if unspecified
     # Use dirname == 'auto-<OUTER-DIRECTORY>' to set the outer folder, with automatic inner-folder naming
     if dirname == '' or dirname.startswith('auto'):
@@ -241,7 +241,6 @@ if __name__ == '__main__':
             print('gaussian noise in y:', noise)
             print('numsamples:', numsamples)
             print('random_data_seed:', random_data_seed)
-
         do_learning(X, y, numsteps, grouplabels, a, b, equal_error=equal_error,
                     scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
                     group_names=group_names, group_types=group_types, data_name=data_name,
