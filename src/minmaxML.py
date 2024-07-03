@@ -11,6 +11,7 @@ from src.plotting import do_plotting
 from src.save_models import save_models_to_os
 from sklearn.svm import LinearSVC
 from src.linear_svm import LinearSVM
+import os
 
 import warnings
 
@@ -338,7 +339,9 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
                 except Warning:
                     raise Exception(f'Logistic regression did not converge with {max_logi_iters} iterations.')
         elif model_type == 'LinearSVM':
-            modelhat = LinearSVM(dual='auto').fit(X_train, y_train, sample_weight=avg_sampleweights)
+            modelhat = LinearSVM(dual='auto').fit(X_train, y_train, sample_weight=avg_sampleweights)           
+            if t == 1:
+                write_classifier_info(modelhat.coef_[0], modelhat.intercept_[0], X_train, y_train, dirname, tau)     
             if strategic_learner:
                 #Change this to dot product later
                 #tau_local = np.sum(tau * groupweights[0][i])
@@ -347,6 +350,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
         elif model_type == 'PairedRegressionClassifier':
             # NOTE: This is not an sklearn model_class, but a custom class
             modelhat = model_class(regressor_class=LinearRegression).fit(X_train, y_train, avg_sampleweights)
+            if t == 1:
+                write_classifier_info(modelhat.regressor.coef_, modelhat.regressor.intercept_, X_train, y_train, dirname, tau)     
             if strategic_learner:
                 #Change this to dot product later
                 #tau_local = np.sum(tau * groupweights[0][i])
@@ -825,3 +830,39 @@ def rescale_feature_matrix(X):
         X[:, col] /= np.power(10, magnitude)  # Put all feature values in the range [-1, 1]
 
     return X  # X is modified in place, but we return it so function returns reference to its input for chaining
+
+
+
+# Define a function to calculate the fraction of points within a given distance
+
+def fraction_within_distance(y, distances, distance_threshold, label, sign):
+    # Select points of the given class
+    class_points = (y == label)
+    # Calculate the number of points within the specified distance
+    within_distance = (np.abs(distances[class_points]) <= distance_threshold) & (np.dot(sign,distances[class_points]) >= 0)
+    return np.sum(within_distance) / np.sum(class_points)
+    
+def write_classifier_info(w,b, X, y, dirname, tau):
+        #coef_shape = modelhat.coef_.shape
+        #intercept_shape = modelhat.intercept_.shape
+        #print(f"Shape of intercept.coef_: {intercept_shape}, and Shape of w: {b.shape} \n")
+        #print(f"Shape of modelhat.coef_: {coef_shape}, and Shape of w: {w.shape} \n")
+        # Calculate the margin
+        margin = 1 / np.linalg.norm(w)
+        distance = tau
+            
+        # Calculate the distance of each point from the decision boundary
+        distances = (np.dot(X, w) + b) / np.linalg.norm(w)
+        fraction_class_pos_0 = fraction_within_distance(y, distances, distance, 0, 1)
+        fraction_class_pos_1 = fraction_within_distance(y, distances, distance, 1, 1)
+        fraction_class_neg_0 = fraction_within_distance(y, distances, distance, 0, -1)
+        fraction_class_neg_1 = fraction_within_distance(y, distances, distance, 1, -1)
+        
+        os.makedirs(dirname, exist_ok=True)
+        with open(os.path.join(f'{dirname}', "margin.txt"), "w") as file:
+            file.write(f"Margin: {margin}\n")
+            file.write(f"Number of class 0 points: {np.sum(y==0)}, and number of class 1 points: {np.sum(y==1)}\n")
+            file.write(f"Fraction of class 0 points in positive side within {distance} from the decision boundary: {fraction_class_pos_0}\n")
+            file.write(f"Fraction of class 1 points in positive side within {distance} from the decision boundary: {fraction_class_pos_1}\n")            
+            file.write(f"Fraction of class 0 points in negative side within {distance} from the decision boundary: {fraction_class_neg_0}\n")
+            file.write(f"Fraction of class 1 points in negative side within {distance} from the decision boundary: {fraction_class_neg_1}\n")    
