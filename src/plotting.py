@@ -100,8 +100,8 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     
     os.makedirs(dirname, exist_ok=True)
     with open(os.path.join(f'{dirname}', "output.txt"), "w") as file:
-        for row in points:
-            file.write(" ".join(map(str, row)) + "\n")
+        #for row in points:
+        file.write(" ".join(map(str, points[-1])) + "\n")
 
     colors = np.arange(1, numsteps)
     plt.scatter(x, y, c=colors, s=2, label='Trajectory of Mixtures')
