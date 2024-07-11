@@ -10,15 +10,21 @@ from src.save_plots import save_plots_to_os
 def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_names, group_type,
                 show_legend, error_type, data_name, model_string,
                 agg_poperrs, agg_grouperrs, groupweights, pop_error_type, bonus_plots,
-                dirname, multi_group=False,
+                dirname, tau, strategic_learner, multi_group=False,
                 validation=False, equal_error=False):
     """
     Helper function for minimaxML that creates the relevant plots for a single run of the simulation.
     """
 
     # Create a list of all figures we want to save for later which will be passed into a function
+
+    str_learner ={True: 'strategic', False: 'non-strategic'}
+    
+    strategic_string = f'of {str_learner[strategic_learner]} learner'
+
     figures = []
-    figure_names = ['PopError_vs_Rounds', 'GroupError_vs_Rounds', 'GroupWeights_vs_Rounds', 'Trajectory_Plot']
+    learner_name = str_learner[strategic_learner][0].upper() + str_learner[strategic_learner][1:]
+    figure_names = [f'{learner_name}_PopError_vs_Rounds', f'{learner_name}_GroupError_vs_Rounds', f'{learner_name}_GroupWeights_vs_Rounds', f'{learner_name}_Trajectory_Plot']
 
     # Combine all the existing arrays as necessary by separating all subgroups as unqiue groups
     if multi_group:
@@ -45,11 +51,11 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
 
-    plt.ion()
+    #plt.ion()
     # Average Pop error vs. Rounds
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
     plt.plot(agg_poperrs)
-    plt.title(f'Average Population Error ({pop_error_type})' + dataset_string + model_string)
+    plt.title(f'Average Population Error ({pop_error_type})' + dataset_string)
     plt.xlabel('Steps')
     plt.ylabel(f'Average Population Error ({pop_error_type})')
     if display_plots:
@@ -65,7 +71,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
         plt.plot(agg_grouperrs[:, g], label=group_names[g])
     if show_legend:
         plt.legend(loc='upper right')
-    plt.title(f'Group Errors ({error_type})' + dataset_string + model_string)
+    plt.title(f'Group Errors ({error_type}) ' + strategic_string + dataset_string)
     plt.xlabel('Steps')
     plt.ylabel(f'Group Errors ({error_type})')
     if display_plots:
@@ -81,7 +87,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
             plt.plot(groupweights[:, g], label=group_names[g])
         if show_legend:
             plt.legend(loc='upper right')
-        plt.title(f'Group Weights' + dataset_string + model_string)
+        plt.title(f'Group Weights ' + strategic_string + dataset_string + model_string)
         plt.xlabel('Steps')
         plt.ylabel('Group Weights')
         if display_plots:
@@ -98,15 +104,10 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     points[:, 0] = x
     points[:, 1] = y
     
-    os.makedirs(dirname, exist_ok=True)
-    with open(os.path.join(f'{dirname}', "output.txt"), "w") as file:
-        #for row in points:
-        file.write(" ".join(map(str, points[-1])) + "\n")
-
     colors = np.arange(1, numsteps)
     plt.scatter(x, y, c=colors, s=2, label='Trajectory of Mixtures')
     plt.scatter(x[0], y[0], c='m', s=40, label='Starting point')  # Make the first point big and pink
-    plt.title(f'Trajectory over {numsteps - 1} rounds' + dataset_string + model_string)
+    plt.title(f'Trajectory ' + strategic_string + f' w/ budget {tau}' + dataset_string + model_string)
     plt.xlabel(f'Population Error ({pop_error_type})')
     plt.ylabel(f'Max Group Error ({error_type})')
 
@@ -145,7 +146,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
         colors = np.arange(1, numsteps)
         plt.scatter(x, y, c=colors, s=2, label='Trajectory of Mixtures')
         plt.scatter(x[0], y[0], c='m', s=40, label='Starting point')  # Make the first point big and pink
-        plt.title(f'Trajectory over {numsteps - 1} rounds' + dataset_string + model_string)
+        plt.title(f'Trajectory ' + strategic_string + f'with manipulation budget {tau}' + dataset_string + model_string)
         plt.xlabel(f'Population Error ({err_type})')
         plt.ylabel(f'Max Group Error ({pop_err_type})')
 
@@ -165,4 +166,69 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
         plt.close('all')
 
 
+def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error, tau, display_plots = False):
+    dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
+    tau_values = list(max_error.keys())
+    max_error_array = np.zeros((len(tau_values),2))
+    avg_error_array = np.zeros((len(tau_values),2))
+     
+    
+    os.makedirs(dirname, exist_ok=True)
+    with open(os.path.join(f'{dirname}', "error_stat.txt"), "w") as file:        
+        for idx, tau in enumerate(tau_values):
+            file.write(f'tau = {tau} and for max-error:\n') 
+            file.write(f'\t with non-strategic learner = {max_error[tau][False]}\n') 
+            file.write(f'\t with strategic learner = {max_error[tau][True]}\n')
+            
+            file.write(f'tau = {tau} and for avg-error:\n') 
+            file.write(f'\t with non-strategic learner = {avg_error[tau][False]}\n') 
+            file.write(f'\t with strategic learner = {avg_error[tau][True]}\n')
 
+            max_error_array[idx, 0] = max_error[tau][False]
+            max_error_array[idx, 1] = max_error[tau][True]
+            avg_error_array[idx, 0] = avg_error[tau][False]
+            avg_error_array[idx, 1] = avg_error[tau][True]
+    
+     
+    figures = []
+    figure_names = ['Strategic_vs_NonStrategic_MaxError', 'Strategic_vs_NonStrategic_PopError']
+    plt.ion()
+    # Average Pop error vs. Rounds
+    figures.append(plt.figure())  # Creates figure and adds it to list of figures
+    learner_types = ['non-strategic', 'strategic']
+    for learner in [0, 1]:
+        # Plots the groups with appropriate label
+        plt.plot(max_error_array[:, learner], label=learner_types[learner])
+
+    plt.legend(loc='upper right')
+    plt.title(f'Strategic vs Non-Strategic Learner' + dataset_string)
+    
+    tau_x_ticks = np.arange(0, len(max_error_array[:, learner]))
+    tau_x_labels = labels = [str(tau_values[i]) if i % 2 == 0 else '' for i in range(len(tau_values))]
+    plt.xticks(tau_x_ticks, tau_x_labels)
+    
+    plt.xlabel('Manipulation Budget')
+    plt.ylabel(f'Max Population Error ({pop_error_type})')
+
+    if display_plots:
+        plt.show()
+    
+    figures.append(plt.figure())
+    for learner in [0, 1]:
+        # Plots the groups with appropriate label
+        plt.plot(avg_error_array[:, learner], label=learner_types[learner])
+    
+    plt.legend(loc='upper right')
+    
+   
+    plt.title(f'Strategic vs Non-Strategic Learner' + dataset_string)
+    plt.xticks(tau_x_ticks, tau_x_labels)
+    plt.xlabel('Manipulation Budget')
+    plt.ylabel(f'Average Population Error ({pop_error_type})')
+
+    if display_plots:
+        plt.show()
+
+    save_plots_to_os(figures, figure_names, dirname)
+    plt.close('all')
+    

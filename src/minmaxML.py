@@ -25,9 +25,10 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
                 lr=0.01, momentum=0.9, weight_decay=0, n_epochs=10000, hidden_sizes=(2 / 3,),
                 test_size=0.0, random_split_seed=0,
                 group_names=(), group_types=(), data_name='',
-                display_plots=True, verbose=False, use_input_commands=True,
+                display_plots=False, verbose=False, use_input_commands=True,
                 show_legend=True,
-                save_models=False, save_plots=False, dirname='', strategic_learner=False, strategic_agent=False, tau=0):
+                save_models=False, save_plots=False, dirname='', strategic_learner=False, strategic_agent=False, tau=0, max_error=(), avg_error=()):
+    #set the default value of display_plots to False 
     """
     :param X:  numpy matrix of features with dimensions numsamples x numdims
     :param y:  numpy array of labels with length numsamples. Should be numeric (0/1 labels binary classification)
@@ -62,6 +63,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
     :param n_epochs: number of epochs per individual MLP model
     :param hidden_sizes: list of sizes for hidden layers of MLP - fractions (and 1) treated as proportions of numdims
     """
+    
     if not use_input_commands and display_plots:
         warnings.warn('WARNING: use_input_commands is set to False. '
                       'This may cause plots to appear and immediately dissappear when running code from the command '
@@ -478,14 +480,24 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
         stacked_bonus_plots = create_stacked_bonus_plots(num_group_types, extra_error_types, numgroups,
                                                          specific_errors, index, groupsize, total_steps)
         # Do a final combined plot of everything
+        x = agg_poperrs
+        agg_grouperrs_data = agg_grouperrs[0]
+        y = np.max(agg_grouperrs_data, axis=1)
+        
+        avg_error[strategic_learner] = x[-1]
+        max_error[strategic_learner] = y[-1]
+        
+        #print(f'max_error = {max_error}')
+        #input()
         do_plotting(display_plots, save_plots, use_input_commands, total_steps, group_names_and_sizes_list,
                     group_types,
                     show_legend, error_type, data_name, model_string,
                     agg_poperrs, agg_grouperrs, groupweights,
                     pop_error_type, stacked_bonus_plots,
-                    dirname,
+                    dirname, tau, strategic_learner,
                     multi_group=True)
-
+        
+        
         # Repeat for validation as necessary
         if do_validation:
             val_group_names_and_sizes_list = get_group_names_and_sizes_list(group_names, val_groupsize,
@@ -498,7 +510,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5,  equal_error=False, sca
                         show_legend, error_type, data_name, model_string + f'\n Validation with test_size={test_size}',
                         val_agg_poperrs, val_agg_grouperrs, None,
                         pop_error_type, val_stacked_bonus_plots,
-                        dirname, validation=True, multi_group=True)
+                        dirname, tau, strategic_learner, validation=True, multi_group=True)
     else:  # Ensures that return doesn't fail when we aren't plotting
         stacked_bonus_plots = None
         if do_validation:
@@ -835,34 +847,34 @@ def rescale_feature_matrix(X):
 
 # Define a function to calculate the fraction of points within a given distance
 
-def fraction_within_distance(y, distances, distance_threshold, label, sign):
+def points_within_distance(y, distances, distance_threshold, label, sign):
     # Select points of the given class
     class_points = (y == label)
     # Calculate the number of points within the specified distance
     within_distance = (np.abs(distances[class_points]) <= distance_threshold) & (np.dot(sign,distances[class_points]) >= 0)
-    return np.sum(within_distance) / np.sum(class_points)
+    return np.sum(within_distance)
     
 def write_classifier_info(w,b, X, y, dirname, tau):
-        #coef_shape = modelhat.coef_.shape
-        #intercept_shape = modelhat.intercept_.shape
-        #print(f"Shape of intercept.coef_: {intercept_shape}, and Shape of w: {b.shape} \n")
-        #print(f"Shape of modelhat.coef_: {coef_shape}, and Shape of w: {w.shape} \n")
-        # Calculate the margin
-        margin = 1 / np.linalg.norm(w)
-        distance = tau
-            
-        # Calculate the distance of each point from the decision boundary
-        distances = (np.dot(X, w) + b) / np.linalg.norm(w)
-        fraction_class_pos_0 = fraction_within_distance(y, distances, distance, 0, 1)
-        fraction_class_pos_1 = fraction_within_distance(y, distances, distance, 1, 1)
-        fraction_class_neg_0 = fraction_within_distance(y, distances, distance, 0, -1)
-        fraction_class_neg_1 = fraction_within_distance(y, distances, distance, 1, -1)
+    #coef_shape = modelhat.coef_.shape
+    #intercept_shape = modelhat.intercept_.shape
+    #print(f"Shape of intercept.coef_: {intercept_shape}, and Shape of w: {b.shape} \n")
+    #print(f"Shape of modelhat.coef_: {coef_shape}, and Shape of w: {w.shape} \n")
+    # Calculate the margin
+    margin = 1 / np.linalg.norm(w)
+    distance = tau
         
-        os.makedirs(dirname, exist_ok=True)
-        with open(os.path.join(f'{dirname}', "margin.txt"), "w") as file:
-            file.write(f"Margin: {margin}\n")
-            file.write(f"Number of class 0 points: {np.sum(y==0)}, and number of class 1 points: {np.sum(y==1)}\n")
-            file.write(f"Fraction of class 0 points in positive side within {distance} from the decision boundary: {fraction_class_pos_0}\n")
-            file.write(f"Fraction of class 1 points in positive side within {distance} from the decision boundary: {fraction_class_pos_1}\n")            
-            file.write(f"Fraction of class 0 points in negative side within {distance} from the decision boundary: {fraction_class_neg_0}\n")
-            file.write(f"Fraction of class 1 points in negative side within {distance} from the decision boundary: {fraction_class_neg_1}\n")    
+    # Calculate the distance of each point from the decision boundary
+    distances = (np.dot(X, w) + b) / np.linalg.norm(w)
+    f_pos = points_within_distance(y, distances, distance, 0, 1)
+    t_pos = points_within_distance(y, distances, distance, 1, 1)
+    t_neg = points_within_distance(y, distances, distance, 0, -1)
+    f_neg = points_within_distance(y, distances, distance, 1, -1)
+    
+    os.makedirs(dirname, exist_ok=True)
+    with open(os.path.join(f'{dirname}', "manipulation_stat.txt"), "w") as file:
+        #file.write(f"Margin: {margin}\n")
+        file.write(f"Number of class 0 points: {np.sum(y==0)}, and number of class 1 points: {np.sum(y==1)}\n")
+        file.write(f"Number of class 0 points in positive side within {distance} from the decision boundary (FP): {f_pos}\n")
+        file.write(f"Number of class 1 points in positive side within {distance} from the decision boundary (TP): {t_pos}\n")            
+        file.write(f"Number of class 0 points in negative side within {distance} from the decision boundary (TN): {t_neg}\n")
+        file.write(f"Number of class 1 points in negative side within {distance} from the decision boundary (FN): {f_neg}\n")    
