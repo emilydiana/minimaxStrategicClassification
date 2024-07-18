@@ -93,13 +93,13 @@ is_categorical = True  # Denotes whether labels are categeorical (classification
 use_preconfigured_dataset = True  # Set to True and select a data_index to use an existing dataset (or synthetic data)
 datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'Adult', 6: 'Student',
             7: 'Bike', 8: 'Credit', 9: 'Fires', 10: 'Wine', 11: 'Heart', 12: 'Marketing(Small)', 13: 'Marketing(Full)',
-            14: 'COMPAS_race_and_gender',
+            14: 'COMPAS_race_and_gender', 15: 'Student_binary',
             0: 'Synthetic'}
 #Good Datasets: COMPAS, 
 #Adult does not converge. But still good for showing the difference
 
  
-data_index = 13  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 15  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings

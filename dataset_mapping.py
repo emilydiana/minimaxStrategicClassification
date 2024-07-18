@@ -58,6 +58,13 @@ def get_dataset_features(dataset):
         usable_features = None  # all
         categorical_columns = ['Medu', 'Fedu', 'famrel', 'freetime', 'goout', 'Dalc', 'Walc', 'health', 'absenses']
         is_categorical = False
+    elif dataset == 'Student_binary':
+        path = 'datasets/student-pass.csv'
+        label = 'Pass'  # binary
+        group = 'sex'  # TBD
+        usable_features = None  # all
+        categorical_columns = ['Medu', 'Fedu', 'famrel', 'freetime', 'goout', 'Dalc', 'Walc', 'health', 'absenses']
+        is_categorical = True
     elif dataset == 'Bike':
         path = 'datasets/SeoulBikeData.csv'
         label = 'Rented Bike Count'
