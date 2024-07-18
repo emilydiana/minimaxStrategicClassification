@@ -95,7 +95,7 @@ def get_dataset_features(dataset):
         group = 'sex'
         usable_features = None
         categorical_columns = []
-        is_categorical = False
+        is_categorical = True 
     elif dataset == 'Marketing(Full)':
         path = 'datasets/bank-full.csv'
         label = 'y'
