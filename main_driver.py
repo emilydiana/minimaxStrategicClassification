@@ -99,7 +99,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 #Adult does not converge. But still good for showing the difference
 
  
-data_index = 15  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 4  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings

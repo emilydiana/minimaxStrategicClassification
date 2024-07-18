@@ -42,7 +42,7 @@ def get_dataset_features(dataset):
         group = 'pluralityRace'
         usable_features = None  # all
         categorical_columns = []
-        is_categorical = False
+        is_categorical = True 
     elif dataset == 'Adult':
         path = 'datasets/adult_cleaned.csv'
         label = 'income'  # binary <50k or not
