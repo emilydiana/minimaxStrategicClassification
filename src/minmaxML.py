@@ -28,7 +28,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 display_plots=False, verbose=False, use_input_commands=True,
                 show_legend=True,
                 save_models=False, save_plots=False, dirname='', 
-                strategic_learner=False, strategic_agent=False, tau=0, scale=1, max_error=(), avg_error=(), val_max_error=(), val_avg_error=()):
+                strategic_learner=False, strategic_agent=False, tau=0, scale=1, curr_idx = 0, 
+                max_error=(), avg_error=(), val_max_error=(), val_avg_error=()):
     #set the default value of display_plots to False 
     """
     :param X:  numpy matrix of features with dimensions numsamples x numdims
@@ -341,16 +342,14 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                                     verbose=0).fit(X_train, y_train, avg_sampleweights)
                 except Warning:
                     raise Exception(f'Logistic regression did not converge with {max_logi_iters} iterations.')
-        elif model_type == 'LinearSVM':
-            modelhat = LinearSVM(dual='auto').fit(X_train, y_train, sample_weight=avg_sampleweights)           
-            if t == 1:
-                write_classifier_info(modelhat.coef_[0], modelhat.intercept_[0], X_train, y_train, dirname, tau, scale)     
-            if strategic_learner[0]:
-                #Change this to dot product later
-                #tau_local = np.sum(tau * groupweights[0][i])
-                tau_local = tau
-                shift_model(modelhat, tau_local)
-                #modelhat.intercept_ = modelhat.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.coef_))
+        # elif model_type == 'LinearSVM':
+            # modelhat = LinearSVM(dual='auto').fit(X_train, y_train, sample_weight=avg_sampleweights)           
+            # if t == 1:
+                # write_classifier_info(modelhat.coef_[0], modelhat.intercept_[0], X_train, y_train, dirname, tau, scale)     
+            # if strategic_learner[0]:
+                # tau_local = tau
+                # shift_model(modelhat, tau_local)
+                # #modelhat.intercept_ = modelhat.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.coef_))
         elif model_type == 'PairedRegressionClassifier':
             # NOTE: This is not an sklearn model_class, but a custom class
             modelhat = model_class(regressor_class=LinearRegression).fit(X_train, y_train, avg_sampleweights)
@@ -391,15 +390,15 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
             compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau, scale)
             # Compute the errors for all additional error types
             for err_type in extra_error_types:
-                compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C, strategic_agent, tau, scale)
+                compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C)
             # Repeat for validation
             if do_validation:
                 #whether shift classifier in the test phase (only happen in baseline II)
-                if strategic_learner[0] == False and strategic_learner[1] == True:
+                if strategic_learner[1] == True:
                     tau_local = tau
                     modelhat = shift_model(modelhat, tau_local)
 
-                compute_model_errors(modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, strategic_agent, tau, scale)
+                compute_model_errors(modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau, scale)
                 for err_type in extra_error_types:
                     compute_model_errors(modelhat, X_test, y_test, t, val_specific_errors[err_type], err_type,
                                          penalty, C, strategic_agent, tau, scale)
@@ -496,11 +495,11 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         val_agg_groupers_data = val_agg_grouperrs[0]
         val_y = np.max(val_agg_groupers_data, axis=1)
         
-        avg_error[strategic_learner[0] * 2 + strategic_learner[1]] = x[-1]
-        max_error[strategic_learner[0] * 2 + strategic_learner[1]] = y[-1]
+        avg_error[curr_idx] = x[-1]
+        max_error[curr_idx] = y[-1]
 
-        val_avg_error[strategic_learner[0] * 2 + strategic_learner[1]] = val_x[-1]
-        val_max_error[strategic_learner[0] * 2 + strategic_learner[1]] = val_y[-1]
+        val_avg_error[curr_idx] = val_x[-1]
+        val_max_error[curr_idx] = val_y[-1]
         
         #print(f'max_error = {max_error}')
         #input()
@@ -510,7 +509,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                     agg_poperrs, agg_grouperrs, groupweights,
                     pop_error_type, stacked_bonus_plots,
                     dirname, tau, strategic_learner,
-                    multi_group=True)
+                    multi_group=True, curr_idx = curr_idx)
         
         
         # Repeat for validation as necessary
@@ -525,7 +524,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                         show_legend, error_type, data_name, model_string + f'\n Validation with test_size={test_size}',
                         val_agg_poperrs, val_agg_grouperrs, None,
                         pop_error_type, val_stacked_bonus_plots,
-                        dirname, tau, strategic_learner, validation=True, multi_group=True)
+                        dirname, tau, strategic_learner, validation=True, multi_group=True, curr_idx = curr_idx)
     else:  # Ensures that return doesn't fail when we aren't plotting
         stacked_bonus_plots = None
         if do_validation:
