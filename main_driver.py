@@ -15,14 +15,22 @@ import random
 import os
 import warnings
 
-strategic_learner = False
-strategic_agent = True 
-#tau = 0.3
+strategic_learner = [False, False] #strategic_learner[0]: is learner strategic in training, #strategic_learner[1]: is strategic in test
+strategic_agent = [False, True] 
+alg_spec = [False, False, False]    # the first two coordinates are respectively showing type of the learner in the Tr and Ts phases, 
+                                    # and the last coordinate indicates agents behavior in the Tr phase.
+                                    # In other words, alg_spec assign values to strategic_learner and strategic_agent as follows:
+                                    # strategic_learner[0] = alg_spec[0]
+                                    # strategic_learner[1] = alg_spec[2]    
+                                    # strategic_agent = alg_spec[1]       
 
-tau_min = 0.1
-tau_max = 2.0
+tau_min = 1
+tau_max = 20
 tau_step = 0.1
+scale = 1
+decimal_size = 1
 
+#scale: COMAPS =1, Credit = 1, Student = 1e9
 
 
 #Good Parameters for COMAPS: tau = 0.5 & tau = 1 (all most all points), tau= 0.2 & tau = 0.1 ( tn is close to fp), tau=0.25 & tau= 0.3 are good
@@ -35,7 +43,7 @@ models = {1: 'LinearRegression', 2: 'LogisticRegression', 3: 'Perceptron', 4: 'P
           5: 'MLPClassifier', 6: 'LinearSVM'}  # WARNING: MLPClassifier is not GPU optimized and may run slowly
 model_index = 4  # Set this to select a model type according to the mapping above
 
-numsteps = 1000  # number of steps for learning/game
+numsteps = 2000  # number of steps for learning/game
 # NOTE: eta = a * t^(-b) on the t-th round of the game
 a = 1  # Multiplicative coefficient on parametrized learning rate
 b = 1 / 2  # Negative exponent on parameterized learning rate
@@ -44,7 +52,7 @@ equal_error = False  # Defaults to False for minimax. Set to True to find equal 
 error_type = '0/1 Loss'  # 'MSE', '0/1 Loss', 'FP', 'FN', 'Log-Loss', 'FP-Log-Loss', 'FN-Log-Loss'
 extra_error_types = {}  # Set of additional error types to plot from (only relevant for classification)
 pop_error_type = ''  # Error type for the population on the trajectory (set automatically in general)
-test_size = 0.0  # The proportion of the training data to be withheld as validation data (set to 0.0 for no validation)
+test_size = 0.2  # The proportion of the training data to be withheld as validation data (set to 0.0 for no validation)
 random_split_seed = 4235255  # If test_string1 size > 0.0, the seed to be passed to numpy for train/test split
 
 fit_intercept = True  # If the linear model should fit an intercept (applies only to LinReg and Logreg)
@@ -98,6 +106,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 #Good Datasets: COMPAS, 
 #Adult does not converge. But still good for showing the difference
 
+# 1, 4, , 8, 11
  
 data_index = 4  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
@@ -185,6 +194,7 @@ if __name__ == '__main__':
 
     binary = model_type in classification_models  # If synthetic data, create binary data if using a classifier
 
+
     # Setup matrices from data from file
     if read_from_file:
         X, y, grouplabels, group_names, group_types, is_categorical = read_dataset_from_file(file_path)
@@ -219,16 +229,17 @@ if __name__ == '__main__':
     model_name_shortener = {'PairedRegressionClassifier': 'PRC', 'LinearRegression': 'LinReg',
                             'LogisticRegression': 'LogReg', 'LinearSVM': 'SVM'}
                             
-    avg_error = defaultdict(lambda: {True: 0, False: 0})
-    max_error = defaultdict(lambda: {True: 0, False: 0})
-    for tau in np.arange(tau_min, round(tau_max + tau_step, 3), tau_step):                    
-        # Set the directory name automatically if unspecified
-        # Use dirname == 'auto-<OUTER-DIRECTORY>' to set the outer folder, with automatic inner-folder naming
-        
-        tau = round(tau, 3)
+    avg_error = defaultdict(lambda: [0] * 6)
+    max_error = defaultdict(lambda: [0] * 6)
+    val_avg_error = defaultdict(lambda: [0] * 6)
+    val_max_error = defaultdict(lambda: [0] * 6)
+    tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
 
-        curr_avg_error = {True: 0, False: 0}
-        curr_max_error = {True: 0, False: 0}
+    for tau in tau_list:                            
+        curr_avg_error = [0] * 6
+        curr_max_error = [0] * 6
+        curr_val_avg_error = [0] * 6
+        curr_val_max_error = [0] * 6
         
         dataname_extension = data_name if not new_synthetic else f'seed={random_data_seed}'
         #outer_directory = dirname[5:] if dirname.startswith('auto-') else 'experiments'
@@ -237,9 +248,16 @@ if __name__ == '__main__':
         equal_error_tag = '_equal-error' if equal_error else ''
         solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
         model_tag = model_name_shortener.get(model_type, model_type)
-        dirname = f'{outer_directory}/{model_tag}_tau={tau}{error_tag}{equal_error_tag}'
+        dirname = f'{outer_directory}/{model_tag}_val={test_size}_tau={round(tau,decimal_size)}{error_tag}{equal_error_tag}'
 
-        for strategic_learner in [True, False]:
+        for alg_spec in [[False, False, False], [False, False, True], [False, True, False], [False, True, True], [True, True, False]]:
+            # Assign values from alg_spec to strategic_learner and strategic_agent
+            strategic_learner[0] = alg_spec[0]
+            strategic_learner[1] = alg_spec[2]    
+            strategic_agent = alg_spec[1]
+            curr_index = strategic_learner[0] * 4 + strategic_learner[1] * 2 + strategic_agent
+#            print(curr_index)            
+#            input()
 
             if not use_multiple_gammas:
                 print(f'Executing main with the following parameters: \n \n\
@@ -283,12 +301,18 @@ if __name__ == '__main__':
                             fit_intercept=fit_intercept, logistic_solver=logistic_solver,
                             max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
                             n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay, hidden_sizes=hidden_sizes,
-                            save_plots=save_plots, dirname=dirname, strategic_learner=strategic_learner, strategic_agent=strategic_agent, tau=tau, max_error=curr_max_error, avg_error=curr_avg_error)
-                
-                #print(curr_max_error)
-                #input()
-                max_error[tau][strategic_learner] = curr_max_error[strategic_learner]
-                avg_error[tau][strategic_learner] = curr_avg_error[strategic_learner]
+                            save_plots=save_plots, dirname=dirname, 
+                            strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
+                            tau=tau, scale=scale, curr_idx = curr_index,
+                            max_error=curr_max_error, avg_error=curr_avg_error, 
+                            val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
+#                print(curr_max_error[curr_index])
+                max_error[tau][curr_index] = curr_max_error[curr_index]
+                avg_error[tau][curr_index] = curr_avg_error[curr_index]
+
+                val_max_error[tau][curr_index] = curr_val_max_error[curr_index]
+                val_avg_error[tau][curr_index] = curr_val_avg_error[curr_index]
+
             # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
             else:
                 print('Starting a multi-round relaxed simulation over many values of gamma.')
@@ -480,7 +504,8 @@ if __name__ == '__main__':
                            f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
                            f'gamma = {gamma if relaxed else 0.0}',
                            f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
-                           f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}']
+                           f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
+                           f'{scale:.2e}']
 
             synethetic_list = []
             if use_preconfigured_dataset and data_index == 0 and not read_from_file:
@@ -493,5 +518,6 @@ if __name__ == '__main__':
                                     f'num_uniform_features = {num_uniform_features}'])
 
             write_params_to_os(outer_directory, params_list)
-    plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, tau, display_plots=False)
+    plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
+                        val_max_error, val_avg_error, tau, display_plots=False)
 
