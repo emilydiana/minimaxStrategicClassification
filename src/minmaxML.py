@@ -28,7 +28,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 display_plots=False, verbose=False, use_input_commands=True,
                 show_legend=True,
                 save_models=False, save_plots=False, dirname='', 
-                strategic_learner=False, strategic_agent=False, tau=0, scale=1, curr_idx = 0, 
+                strategic_learner=[False,False], strategic_agent=False, tau=0, scale=1, curr_idx = 0, 
                 max_error=(), avg_error=(), val_max_error=(), val_avg_error=()):
     #set the default value of display_plots to False 
     """
@@ -65,7 +65,6 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     :param n_epochs: number of epochs per individual MLP model
     :param hidden_sizes: list of sizes for hidden layers of MLP - fractions (and 1) treated as proportions of numdims
     """
-    
     if not use_input_commands and display_plots:
         warnings.warn('WARNING: use_input_commands is set to False. '
                       'This may cause plots to appear and immediately dissappear when running code from the command '
@@ -494,7 +493,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         val_x = val_agg_poperrs
         val_agg_groupers_data = val_agg_grouperrs[0]
         val_y = np.max(val_agg_groupers_data, axis=1)
-        
+       
         avg_error[curr_idx] = x[-1]
         max_error[curr_idx] = y[-1]
 
