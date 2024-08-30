@@ -521,6 +521,6 @@ if __name__ == '__main__':
                                         f'num_uniform_features = {num_uniform_features}'])
 
                 write_params_to_os(outer_directory, params_list)
-    plot_write_overall(error_type, outer_directory, data_name, max_error[0], avg_error[0], 
-                        val_max_error[0], val_avg_error[0], tau, display_plots=False)
+    plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
+                        val_max_error, val_avg_error, tau, display_plots=False)
 

@@ -199,15 +199,15 @@ def write_error_array(avg_error, max_error, max_error_array, avg_error_array, ta
 def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error, 
                         val_max_error, val_avg_error, tau, display_plots = False):
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
-    tau_values = list(max_error.keys())
-
+    tau_values = list(max_error[0].keys())
+    #Loop through this and then aggregate results?
     max_error_array = np.zeros((len(tau_values),6))
     avg_error_array = np.zeros((len(tau_values),6))
-    write_error_array(avg_error, max_error, max_error_array, avg_error_array, tau_values, dirname, "")    
+    write_error_array(avg_error[0], max_error[0], max_error_array, avg_error_array, tau_values, dirname, "")    
     
     val_max_error_array = np.zeros((len(tau_values),6))
     val_avg_error_array = np.zeros((len(tau_values),6))
-    write_error_array(val_avg_error, val_max_error, val_max_error_array, val_avg_error_array, tau_values, dirname, "val-")    
+    write_error_array(val_avg_error[0], val_max_error[0], val_max_error_array, val_avg_error_array, tau_values, dirname, "val-")    
      
     figures = []
     figure_names = ['MaxGroupError', 'AvgPopError', 'val_MaxGroupError', 'val_AvgPopError']
