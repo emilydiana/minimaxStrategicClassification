@@ -23,10 +23,10 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-
+num_rounds = 8 
 tau_min = 1
 tau_max = 2
-tau_step = 0.5
+tau_step = 0.25
 scale = 1
 decimal_size = 1
 
@@ -228,13 +228,15 @@ if __name__ == '__main__':
     # Allows us to give shorter names to our folders
     model_name_shortener = {'PairedRegressionClassifier': 'PRC', 'LinearRegression': 'LinReg',
                             'LogisticRegression': 'LogReg', 'LinearSVM': 'SVM'}
-    num_rounds = 2
     tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
     avg_error = []
     max_error = []
     val_avg_error = []
     val_max_error = []
-    for t in range(num_rounds):                        
+    #Emily hacky correction for upping seed each round
+    random_split_seed -=1
+    for t in range(num_rounds):
+        random_split_seed +=1
         avg_error.append(defaultdict(lambda: [0] * 6))
         max_error.append(defaultdict(lambda: [0] * 6))
         val_avg_error.append(defaultdict(lambda: [0] * 6))
