@@ -206,7 +206,6 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     avg_error_array = []
     val_max_error_array = []
     val_avg_error_array = []
-    print("Trials:" + str(trials))
     for t in range(trials):
         max_error_array.append(np.zeros((len(tau_values),6)))
         avg_error_array.append(np.zeros((len(tau_values),6)))
