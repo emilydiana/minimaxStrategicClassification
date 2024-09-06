@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-def create_validation_split(X, y, grouplabels, test_size, random_seed=45):
+def create_validation_split(X, y, tau_vector, grouplabels, test_size, random_seed=45):
     """
     :param X: Features matrix
     :param y: label matrix (column vector)
@@ -23,15 +23,19 @@ def create_validation_split(X, y, grouplabels, test_size, random_seed=45):
     """
 
     num_group_types = grouplabels.shape[0]
-
+        
+    print(num_group_types)
+    
     # Default, single groups type case
     if num_group_types == 1:
         grouplabels = grouplabels[0]
         numgroups = np.size(np.unique(grouplabels))
         # Each of these 'pieces' is the training or testing portion of a specific groups to be combined later
         X_train_pieces = []
+        tau_vector_train_pieces = []
         y_train_pieces = []
         X_test_pieces = []
+        tau_vector_test_pieces = []
         y_test_pieces = []
         grouplabels_train = []
         grouplabels_test = []
@@ -45,11 +49,16 @@ def create_validation_split(X, y, grouplabels, test_size, random_seed=45):
             # Perform the train test split of the desired size on this particular groups
             X_train_curr, X_test_curr, y_train_curr, y_test_curr = \
                 train_test_split(X[index[g]], y[index[g]], test_size=test_size, random_state=random_seed)
+            tau_vector_train_curr, tau_vector_test_curr= \
+                train_test_split(tau_vector[index[g]], test_size=test_size, random_state=random_seed)    
             # Append the matrix portions for this groups onto the appropriate python lists
             X_train_pieces.append(X_train_curr)
             X_test_pieces.append(X_test_curr)
             y_train_pieces.append(y_train_curr)
             y_test_pieces.append(y_test_curr)
+            tau_vector_train_pieces.append(tau_vector_train_curr)
+            tau_vector_test_pieces.append(tau_vector_test_curr)
+            
 
             # Assert that we have the same number of rows for X and y
             assert X_train_curr.shape[0] == y_train_curr.shape[0]
@@ -63,15 +72,16 @@ def create_validation_split(X, y, grouplabels, test_size, random_seed=45):
         X_test = np.concatenate(X_test_pieces, axis=0)
         y_train = np.concatenate(y_train_pieces, axis=0)
         y_test = np.concatenate(y_test_pieces, axis=0)
-
+        tau_vector_train = np.concatenate(tau_vector_train_pieces, axis=0)
+        tau_vector_test = np.concatenate(tau_vector_test_pieces, axis=0)
         # Assert that we still have the same number of features
         assert X_train.shape[1] == X.shape[1]
         assert X_test.shape[1] == X.shape[1]
 
         grouplabels_train = np.expand_dims(np.array(grouplabels_train), axis=0)
         grouplabels_test = np.expand_dims(np.array(grouplabels_test), axis=0)
-
-        return X_train, X_test, y_train, y_test, grouplabels_train, grouplabels_test
+              
+        return X_train, X_test, y_train, y_test, grouplabels_train, grouplabels_test, tau_vector_train, tau_vector_test
 
     # Multi groups split
     else:
@@ -80,7 +90,8 @@ def create_validation_split(X, y, grouplabels, test_size, random_seed=45):
             train_test_split(X, y, test_size=test_size, random_state=random_seed)
         grouplabels_train_T, grouplabels_test_T = \
             train_test_split(grouplabels.T, test_size=test_size, random_state=random_seed)
-
+        tau_vector_train, tau_vector_test = \
+            train_test_split(tau_vector, test_size=test_size, random_state=random_seed)
         # print(grouplabels_train_T.T)
         # print(grouplabels_train_T.T.shape)
         # print(grouplabels_test_T.T)
@@ -90,4 +101,4 @@ def create_validation_split(X, y, grouplabels, test_size, random_seed=45):
         assert grouplabels_train_T.T.shape[0] == grouplabels_test_T.T.shape[0] == grouplabels.shape[0]
         assert grouplabels_train_T.T.shape[1] + grouplabels_test_T.T.shape[1] == grouplabels.shape[1]
 
-        return X_train, X_test, y_train, y_test, grouplabels_train_T.T, grouplabels_test_T.T
+        return X_train, X_test, y_train, y_test, grouplabels_train_T.T, grouplabels_test_T.T, tau_vector_train, tau_vector_test

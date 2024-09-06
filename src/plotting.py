@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from src.save_plots import save_plots_to_os
+from scipy.spatial.distance import pdist, squareform
 
 
 def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_names, group_type,
@@ -19,7 +20,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     # Create a list of all figures we want to save for later which will be passed into a function
 
     figures = []
-    str_algs= ['NN-F', 'NS-F' , 'NN-A', 'NS-A' , '' , 'SS-F']
+    str_algs= ['NN-F', '' , 'NN-A', '' , '' , 'SS-F']
     alg_name = f'{str_algs[curr_idx]}'
     figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
                     f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
@@ -171,29 +172,45 @@ def write_error_array(avg_error, max_error, max_error_array, avg_error_array, ta
             file.write(f'tau = {tau} and for {val}max-error:\n') 
             file.write(f'\t NN-F = {max_error[tau][0]}\n') 
             file.write(f'\t NN-A = {max_error[tau][2]}\n') 
-            file.write(f'\t NS-F = {max_error[tau][1]}\n') 
-            file.write(f'\t NS-A = {max_error[tau][3]}\n') 
+#            file.write(f'\t NS-F = {max_error[tau][1]}\n') 
+#            file.write(f'\t NS-A = {max_error[tau][3]}\n') 
             file.write(f'\t SS-F = {max_error[tau][5]}\n') 
 
             
             file.write(f'tau = {tau} and for {val}avg-error:\n') 
             file.write(f'\t NN-F = {avg_error[tau][0]}\n') 
             file.write(f'\t NN-A = {avg_error[tau][2]}\n') 
-            file.write(f'\t NS-F = {avg_error[tau][1]}\n') 
-            file.write(f'\t NS-A = {avg_error[tau][3]}\n') 
+#            file.write(f'\t NS-F = {avg_error[tau][1]}\n') 
+#            file.write(f'\t NS-A = {avg_error[tau][3]}\n') 
             file.write(f'\t SS-F = {avg_error[tau][5]}\n') 
 
             max_error_array[idx, 0] = max_error[tau][0]
-            max_error_array[idx, 1] = max_error[tau][1]
+#            max_error_array[idx, 1] = max_error[tau][1]
             max_error_array[idx, 2] = max_error[tau][2]
-            max_error_array[idx, 3] = max_error[tau][3]
+#            max_error_array[idx, 3] = max_error[tau][3]
             max_error_array[idx, 5] = max_error[tau][5]
 
             avg_error_array[idx, 0] = avg_error[tau][0]
-            avg_error_array[idx, 1] = avg_error[tau][1]
+#            avg_error_array[idx, 1] = avg_error[tau][1]
             avg_error_array[idx, 2] = avg_error[tau][2]
-            avg_error_array[idx, 3] = avg_error[tau][3]
+#            avg_error_array[idx, 3] = avg_error[tau][3]
             avg_error_array[idx, 5] = avg_error[tau][5]
+
+
+def pairwise_distance_distribution(X):
+    # Compute the pairwise distances using pdist
+    pairwise_distances = pdist(X)
+    print(np.max(pairwise_distances), np.min(pairwise_distances))
+    plt.hist(pairwise_distances, bins=30, edgecolor='black')
+    plt.title('Histogram of Pairwise Distances')
+    plt.xlabel('Pairwise Distance')
+    plt.ylabel('Frequency')
+
+    # Save the plot to a file (e.g., histogram.png)
+    #plt.savefig('pairwise_distances_histogram.png', dpi=300, bbox_inches='tight')
+
+    # Show the plot
+    plt.show()
 
 
 def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error, 
@@ -214,16 +231,17 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     plt.ion()
     # Average Pop error vs. Rounds
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
-    learner_types = ['NN-F', 'NS-F' , 'NN-A', 'NS-A' , '' , 'SS-F']
-    for learner in [0, 1, 2, 3, 5]:
+    learner_types = ['NN-F', '' , 'NN-A', '' , '' , 'SS-F']
+    for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
         plt.plot(max_error_array[:, learner], label=learner_types[learner])
  
     plt.legend(loc='upper right')
     plt.title(f'Max Group (Tr) Erorr Comparison{dataset_string}')
     
+    ## Changed 2 to 10
     tau_x_ticks = np.arange(0, len(max_error_array[:, learner]))
-    tau_x_labels = [str(tau_values[i]) if i % 2 == 0 else '' for i in range(len(tau_values))]
+    tau_x_labels = [str(tau_values[i]) if i % 10 == 0 else '' for i in range(len(tau_values))]
     plt.xticks(tau_x_ticks, tau_x_labels)
     
     plt.xlabel('Manipulation Budget')
@@ -233,7 +251,7 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
         plt.show()
     
     figures.append(plt.figure())
-    for learner in [0, 1, 2, 3, 5]:
+    for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
         plt.plot(avg_error_array[:, learner], label=learner_types[learner])
     
@@ -249,7 +267,7 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
         plt.show()
 
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
-    for learner in [0, 1, 2, 3, 5]:
+    for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
         plt.plot(val_max_error_array[:, learner], label=learner_types[learner])
  
@@ -257,7 +275,7 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     plt.title(f'Max Group (Ts) Erorr Comparison{dataset_string}')
     
     tau_x_ticks = np.arange(0, len(val_max_error_array[:, learner]))
-    tau_x_labels = [str(tau_values[i]) if i % 2 == 0 else '' for i in range(len(tau_values))]
+    tau_x_labels = [str(tau_values[i]) if i % 1 == 0 else '' for i in range(len(tau_values))]
     plt.xticks(tau_x_ticks, tau_x_labels)
     
     plt.xlabel('Manipulation Budget')
@@ -267,7 +285,7 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
         plt.show()
     
     figures.append(plt.figure())
-    for learner in [0, 1, 2, 3, 5]:
+    for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
         plt.plot(val_avg_error_array[:, learner], label=learner_types[learner])
     

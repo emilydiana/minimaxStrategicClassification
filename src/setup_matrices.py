@@ -124,7 +124,7 @@ def setup_matrices(path, label, groups, usable_features=None, drop_group_as_feat
         print(f'numgroups: {numgroups}')
         print(f'group_sets: {group_sets}')
         print(f'is_binary: {is_binary}')
-
+        
     if save_data:
         save_dataset(file_dir, file_name, X, y, grouplabels, group_sets, group_types, is_binary)
 

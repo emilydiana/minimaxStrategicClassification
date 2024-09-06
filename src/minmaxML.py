@@ -12,8 +12,9 @@ from src.save_models import save_models_to_os
 from sklearn.svm import LinearSVC
 from src.linear_svm import LinearSVM
 import os
-
+import copy
 import warnings
+from src.plotting import pairwise_distance_distribution
 
 
 def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scale_eta_by_label_range=True,
@@ -28,7 +29,9 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 display_plots=False, verbose=False, use_input_commands=True,
                 show_legend=True,
                 save_models=False, save_plots=False, dirname='', 
-                strategic_learner=False, strategic_agent=False, tau=0, scale=1, curr_idx = 0, 
+                strategic_learner=False, strategic_agent=False, tau=0, tau_vector=(), 
+                learner_tau_min_frac = 0, learner_tau_max_frac = 1, learner_tau_mean = 0, learner_tau_step = 0.1, 
+                curr_idx=0, 
                 max_error=(), avg_error=(), val_max_error=(), val_avg_error=()):
     #set the default value of display_plots to False 
     """
@@ -149,12 +152,12 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     if do_validation:
         # Use our custom function to create a balanced train/test split across groups membership
         # NOTE: If num_group_types > 1, this function will do a purely random split
-        X_train, X_test, y_train, y_test, grouplabels_train, grouplabels_test = \
-            create_validation_split(X, y, grouplabels, test_size, random_seed=random_split_seed)
+        X_train, X_test, y_train, y_test, grouplabels_train, grouplabels_test, tau_vector_train, tau_vector_test = \
+            create_validation_split(X, y, tau_vector, grouplabels, test_size, random_seed=random_split_seed)
     else:
         # If we aren't doing a split, all data is used as "training" data
-        X_train, y_train, grouplabels_train, = X, y, grouplabels
-        X_test, y_test, grouplabels_test = None, None, None
+        X_train, y_train, grouplabels_train, tau_vector_train = X, y, grouplabels, tau_vector
+        X_test, y_test, grouplabels_test, tau_vector_test = None, None, None, None
 
     # Compute features about the data
     numsamples, numdims = X_train.shape
@@ -274,8 +277,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
             print(f'Group sizes (train): {groupsize}')
             print(f'Group sizes (val):   {val_groupsize}')
         else:
-            print(f'Group sizes are: {groupsize}')
-
+            print(f'Group sizes are: {groupsize}')    
+    
     # Initialize sample weights and groups weights for Regulator
     groupweights = [np.zeros((numsteps, numgroups[i])) for i in range(num_group_types)]
     p = [np.array([]) for _ in range(num_group_types)]
@@ -342,25 +345,43 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                                     verbose=0).fit(X_train, y_train, avg_sampleweights)
                 except Warning:
                     raise Exception(f'Logistic regression did not converge with {max_logi_iters} iterations.')
-        # elif model_type == 'LinearSVM':
-            # modelhat = LinearSVM(dual='auto').fit(X_train, y_train, sample_weight=avg_sampleweights)           
-            # if t == 1:
-                # write_classifier_info(modelhat.coef_[0], modelhat.intercept_[0], X_train, y_train, dirname, tau, scale)     
-            # if strategic_learner[0]:
-                # tau_local = tau
-                # shift_model(modelhat, tau_local)
-                # #modelhat.intercept_ = modelhat.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.coef_))
         elif model_type == 'PairedRegressionClassifier':
             # NOTE: This is not an sklearn model_class, but a custom class
             modelhat = model_class(regressor_class=LinearRegression).fit(X_train, y_train, avg_sampleweights)
-            if t == 1:
-                write_classifier_info(modelhat.regressor.coef_, modelhat.regressor.intercept_, X_train, y_train, dirname, tau, scale)     
-            if strategic_learner[0]:
-                #Change this to dot product later
-                #tau_local = np.sum(tau * groupweights[0][i])
-                tau_local = tau
-                shift_model(modelhat, tau_local)
-                #modelhat.regressor.intercept_ = modelhat.regressor.intercept_ - np.dot(tau_local,np.linalg.norm(modelhat.regressor.coef_))
+            
+            if strategic_learner[0]: 
+                temp_errors = np.zeros((numsteps, numsamples))
+                learner_tau_values = [tau * (learner_tau_min_frac + i * learner_tau_step) for i in range(int((learner_tau_max_frac - learner_tau_min_frac) / learner_tau_step) + 1)]
+                best_max_err = float('inf')
+                best_learner_tau = learner_tau_min_frac * tau
+                
+                for learner_tau in learner_tau_values:
+                    curr_model = copy.deepcopy(modelhat)
+                    shift_model(curr_model, learner_tau)
+                    
+                    compute_model_errors(curr_model, X_train, y_train, t, temp_errors, error_type, penalty, 
+                    C, strategic_agent, tau_vector_train)
+                    
+                    temp_index = index[0]
+                    temp_groupsize = groupsize[0]
+                    temp_grouperrs = np.zeros(numgroups[0])
+                    
+                    for g in range(0, numgroups[0]):
+                        # Compute the groups errors (true/FP/FN) for the newly made model                                             
+                        temp_grouperrs[g] = np.sum(temp_errors[t, temp_index[g]]) / temp_groupsize[g]
+                    
+                    curr_max_err = np.max(temp_grouperrs)
+                    curr_total_err = np.sum(temp_grouperrs)
+                    if curr_max_err < best_max_err:
+                        best_total_err = curr_total_err
+                        best_max_err = curr_max_err
+                        best_learner_tau = learner_tau
+                    elif curr_max_err == best_max_err and curr_total_err < best_total_err:
+                        best_total_err = curr_total_err
+                        best_max_err = curr_max_err
+                        best_learner_tau = learner_tau                    
+
+                shift_model(modelhat, best_learner_tau)
         elif model_type == 'MLPClassifier':  # Pytorch's MLP wrapped with our custom class to work with the interface
             hidden_sizes = [numdims] + \
                            list(map(lambda x: x if np.floor(x) == x else int(np.floor(x * numdims)), hidden_sizes))
@@ -387,21 +408,22 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
 
         elif model_type in classification_models:
             # Updates errors array with the round-specific errors for each person for round t
-            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau, scale)
+            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau_vector_train)
             # Compute the errors for all additional error types
             for err_type in extra_error_types:
                 compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C)
             # Repeat for validation
             if do_validation:
-                #whether shift classifier in the test phase (only happen in baseline II)
+                #whether shift the reported classifier in the test time
+                val_modelhat = copy.deepcopy(modelhat)
                 if strategic_learner[1] == True:
-                    tau_local = tau
-                    modelhat = shift_model(modelhat, tau_local)
+                    val_modelhat = shift_model(val_modelhat, learner_tau_mean)
 
-                compute_model_errors(modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau, scale)
+                compute_model_errors(val_modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau_vector_test)
+
                 for err_type in extra_error_types:
                     compute_model_errors(modelhat, X_test, y_test, t, val_specific_errors[err_type], err_type,
-                                         penalty, C, strategic_agent, tau, scale)
+                                         penalty, C)
         else:
             raise Exception(f'Invalid Model Type: {model_type}')
 
@@ -453,7 +475,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 weight_to_add = -np.min(sampleweights)
                 if weight_to_add > 0:
                     sampleweights[i] = sampleweights[i] + weight_to_add  # np.maximum(0, -np.min(sampleweights))
-
+            
     # Game is finished here
 
     # Truncate the groups error arrays to have length equal to the number of rounds actually performed
@@ -501,8 +523,6 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         val_avg_error[curr_idx] = val_x[-1]
         val_max_error[curr_idx] = val_y[-1]
         
-        #print(f'max_error = {max_error}')
-        #input()
         do_plotting(display_plots, save_plots, use_input_commands, total_steps, group_names_and_sizes_list,
                     group_types,
                     show_legend, error_type, data_name, model_string,
@@ -642,49 +662,34 @@ def create_stacked_bonus_plots(num_group_types, extra_error_types, numgroups, sp
     return bonus_plots
 
 
-def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', C=1.0, strategic_agent=False, tau=0, scale=1):
+def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', C=1.0, 
+                        strategic_agent=False, tau_vector=()):
     """
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
-    """
+    """       
     if strategic_agent:
+        
         coef_ = None
         y_pred = np.zeros(len(X))
-#        b = 0
         
         if isinstance(modelhat, LinearSVM):
             coef_ = modelhat.coef_
             y_pred = modelhat.decision_function(X)
-#            b = modelhat.intercept_
         else:
             coef_ = modelhat.regressor.coef_
             y_pred = modelhat.regressor.predict(X)
-#            b = modelhat.regressor.intercept_
-            # Ali    
-            #coef_ = modelhat.regressor.coef_
-            #intercept_ = modelhat.regressor.intercept_ 
-            #y_pred = modelhat.regressor.predict(X)
-               
-            #norm_coef = np.linalg.norm(coef_)
-            #dist =  np.abs(y_pred) / norm_coef
-            
-            #move = (dist < tau) & (y_pred < 0)   
-            #strat_x = np.array([x - (np.dot(coef_, x) + intercept_) / np.linalg.norm(coef_)**2 * coef_ if move[i] else x for i, x in enumerate(X)])
-            
-            #dist = np.abs(modelhat.regressor.predict(X).ravel()/np.linalg.norm(modelhat.regressor.predict(X)))
-            #move = dist < tau 
-            #strat_x = np.array([(elem + tau)*(modelhat.regressor.coef_/np.linalg.norm(modelhat.regressor.coef_)) if move[i] else elem for i, elem in enumerate(X)])
-        
         norm_coef = np.linalg.norm(coef_)
-        dist =  np.abs(y_pred) / norm_coef    
-        
-        move = (dist < tau) & (y_pred < 0)   
+        dist =  np.abs(y_pred) / norm_coef
+       
+        move = (dist < tau_vector) & (y_pred < 0)
         manipulation = np.outer(y_pred/norm_coef**2, coef_)    
         stratX = np.copy(X)
-        stratX[move] = X[move] - manipulation[move] 
-           
+        stratX[move] = X[move] - manipulation[move]         
+        
         yhat = modelhat.predict(stratX).ravel() 
     else:
         yhat = modelhat.predict(X).ravel()  # Compute predictions for the newly trained model
+
     # Compute the specified error type
     if error_type == 'MSE':
         errors[t, :] = np.power(y - yhat, 2)
@@ -847,19 +852,6 @@ def compute_highest_gamma(agg_poperrs, agg_grouperrs, relaxed):
     return highest_gamma
 
 
-
-def rescale_feature_matrix_norm(X):
-    """
-    :param X: Feature matrix
-    :return: X': a rescaled feature matrix where large values are scaled down. Modifies X in place
-    """
-    X = X.astype(float)
-    row_norms = np.linalg.norm(X, ord=2, axis=1)
-    max_row_norm = np.max(row_norms)
-    X = (X / max_row_norm) * 10
-    
-    return X
-
 def rescale_feature_matrix(X):
     """
     :param X: Feature matrix
@@ -875,15 +867,13 @@ def rescale_feature_matrix(X):
 
 
 # shift model by tau
-def shift_model(modelhat, tau):
+def shift_model(modelhat, learner_tau):
     if isinstance(modelhat, LinearSVM):
-        modelhat.intercept_ = modelhat.intercept_ - np.dot(tau, np.linalg.norm(modelhat.coef_)) 
+        modelhat.intercept_ = modelhat.intercept_ - np.dot(learner_tau, np.linalg.norm(modelhat.coef_)) 
     else:
-        modelhat.regressor.intercept_ = modelhat.regressor.intercept_ - np.dot(tau, np.linalg.norm(modelhat.regressor.coef_))
+        modelhat.regressor.intercept_ = modelhat.regressor.intercept_ - np.dot(learner_tau, np.linalg.norm(modelhat.regressor.coef_))
     return modelhat
 
-
-# Define a function to calculate the fraction of points within a given distance
 
 def points_within_distance(y, distances, distance_threshold, label, sign, scale):
     # Select points of the given class
@@ -894,27 +884,10 @@ def points_within_distance(y, distances, distance_threshold, label, sign, scale)
     else:
         within_distance = (np.abs(distances[class_points]) <= (distance_threshold/scale)) & (distances[class_points] < 0)
     return np.sum(within_distance)
+
     
 def write_classifier_info(w, b, X, y, dirname, tau, scale):
-    #coef_shape = modelhat.coef_.shape
-    #intercept_shape = modelhat.intercept_.shape
-    #print(f"Shape of intercept.coef_: {intercept_shape}, and Shape of w: {b.shape} \n")
-    #print(f"Shape of modelhat.coef_: {coef_shape}, and Shape of w: {w.shape} \n")
-    # Calculate the margin
-    #margin = 1 / np.linalg.norm(w)
-    #distance = tau
-        
-    # Calculate the distance of each point from the decision boundary
-    
-    
     distances = (np.dot(X, w) + b) / np.linalg.norm(w)
-    #print(distances)
-    #input()
-    #print(X[:2])
-    #print(f'w = {w}, b= {b}\n')
-    #print(f'{min(distances)}, and {max(distances)} \n')
-    #print(distances[:2])
-    #input()
     
     f_pos = points_within_distance(y, distances, tau, 0, 1, scale)
     t_pos = points_within_distance(y, distances, tau, 1, 1, scale)
