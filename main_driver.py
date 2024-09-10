@@ -24,10 +24,9 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
 tau_min = 0
-tau_max = 12
+tau_max = 1
 tau_step = 0.5
-scale = 1
-num_rounds = 8 
+num_rounds = 2 
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -59,8 +58,8 @@ fit_intercept = True  # If the linear model should fit an intercept (applies onl
 convergence_threshold = 1e-12  # Converge early if max change in sampleweights between rounds is less than threshold
 
 # Relaxed Model Settings
-use_multiple_gammas = False  # Set to True to run relaxed algo over many values of gamma
-num_gammas = 1  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
+use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
+num_gammas = 2  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
 gamma = 0.0  # Max groups error if using relaxed variant
@@ -378,7 +377,9 @@ if __name__ == '__main__':
                                         hidden_sizes=hidden_sizes,
                                         save_plots=save_intermediate_plots, dirname=dirname,
                                         strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                                        tau=tau, scale=scale, curr_idx = curr_index,
+                                        tau=tau, tau_vector=tau_vector,
+                                        learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
+                                        learner_tau_step = 0.1, curr_idx = curr_index,
                                         max_error=curr_max_error, avg_error=curr_avg_error, 
                                         val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
                         print(f'With our non-relaxed simulation, we found the range of feasible gammas to be ' +
@@ -477,7 +478,9 @@ if __name__ == '__main__':
                                         hidden_sizes=hidden_sizes,
                                         save_plots=save_intermediate_plots, dirname=dirname + f'/Gamma={gamma}/',
                                         strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                                        tau=tau, scale=scale, curr_idx = curr_index,
+                                        tau=tau, tau_vector=tau_vector,
+                                        learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
+                                        learner_tau_step = 0.1, curr_idx = curr_index,
                                         max_error=curr_max_error, avg_error=curr_avg_error, 
                                         val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
                         # Max groups errors and pop errors of the final mixture for a pareto curve
@@ -537,8 +540,7 @@ if __name__ == '__main__':
                                f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
                                f'gamma = {gamma if relaxed else 0.0}',
                                f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
-                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
-                               f'{scale:.2e}']
+                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}']
 
                 synethetic_list = []
                 if use_preconfigured_dataset and data_index == 0 and not read_from_file:
