@@ -17,17 +17,16 @@ import warnings
 
 strategic_learner = [False, False] #strategic_learner[0]: is learner strategic in training, #strategic_learner[1]: is strategic in test
 strategic_agent = [False, True] 
-alg_spec = [False, False, False]    # the first two coordinates are respectively showing type of the learner in the Tr and Ts phases, 
-                                    # and the last coordinate indicates agents behavior in the Tr phase.
+alg_spec = [False, False, False]    # the first two coordinates are respectively showing type of the learner and agents in the Tr phase, 
+                                    # and the last coordinate indicates learner behavior in the Ts phase.
                                     # In other words, alg_spec assign values to strategic_learner and strategic_agent as follows:
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-num_rounds = 1
-tau_min = 1
-tau_max = 2
-tau_step = 0.25
-scale = 1
+tau_min = 0
+tau_max = 1
+tau_step = 0.5
+num_rounds = 2 
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -43,7 +42,7 @@ models = {1: 'LinearRegression', 2: 'LogisticRegression', 3: 'Perceptron', 4: 'P
           5: 'MLPClassifier', 6: 'LinearSVM'}  # WARNING: MLPClassifier is not GPU optimized and may run slowly
 model_index = 4  # Set this to select a model type according to the mapping above
 
-numsteps = 2000  # number of steps for learning/game
+numsteps = 3000  # number of steps for learning/game
 # NOTE: eta = a * t^(-b) on the t-th round of the game
 a = 1  # Multiplicative coefficient on parametrized learning rate
 b = 1 / 2  # Negative exponent on parameterized learning rate
@@ -52,7 +51,7 @@ equal_error = False  # Defaults to False for minimax. Set to True to find equal 
 error_type = '0/1 Loss'  # 'MSE', '0/1 Loss', 'FP', 'FN', 'Log-Loss', 'FP-Log-Loss', 'FN-Log-Loss'
 extra_error_types = {}  # Set of additional error types to plot from (only relevant for classification)
 pop_error_type = ''  # Error type for the population on the trajectory (set automatically in general)
-test_size = 0.2  # The proportion of the training data to be withheld as validation data (set to 0.0 for no validation)
+test_size = 0.3  # The proportion of the training data to be withheld as validation data (set to 0.0 for no validation)
 random_split_seed = 4235255  # If test_string1 size > 0.0, the seed to be passed to numpy for train/test split
 
 fit_intercept = True  # If the linear model should fit an intercept (applies only to LinReg and Logreg)
@@ -60,7 +59,7 @@ convergence_threshold = 1e-12  # Converge early if max change in sampleweights b
 
 # Relaxed Model Settings
 use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
-num_gammas = 1  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
+num_gammas = 2  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
 gamma = 0.0  # Max groups error if using relaxed variant
@@ -154,6 +153,10 @@ save_models = False  # (MEMORY INTENSIVE: not recommended) saves models to `dirn
 # ----------------------------------------------CODE PROCESSING ---------------------------------------
 if __name__ == '__main__':
 
+    # Input arguments
+    #arg1 = sys.argv[1]
+    #arg2 = sys.argv[2]
+
     # Define this list for later
     classification_models = ['LogisticRegression', 'Perceptron', 'PairedRegressionClassifier',
                              'MLPClassifier', 'LinearSVM']
@@ -229,6 +232,10 @@ if __name__ == '__main__':
     model_name_shortener = {'PairedRegressionClassifier': 'PRC', 'LinearRegression': 'LinReg',
                             'LogisticRegression': 'LogReg', 'LinearSVM': 'SVM'}
     tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
+    # tau_group_values indicate the fraction of tau values each group is using. 
+    # group i budget is tau_group_values[i] * tau
+    tau_group_values = np.ones(np.array(group_names).flatten().shape, dtype=float)
+    
     avg_error = []
     max_error = []
     val_avg_error = []
@@ -246,6 +253,14 @@ if __name__ == '__main__':
             curr_max_error = [0] * 6
             curr_val_avg_error = [0] * 6
             curr_val_max_error = [0] * 6
+        
+            # Initialize tau vector. Different groups with different tau values        
+            flattened_grouplabels = grouplabels.flatten()
+            tau_vector = (tau_group_values[flattened_grouplabels]) * tau
+            # Initially, we set the learner_tau equal to the mean value. However, we want to learn this value too. 
+            learner_tau_mean = np.mean(tau_vector)
+            learner_tau_min_frac = np.min(tau_group_values)
+            learner_tau_max_frac = np.max(tau_group_values)    
 
             dataname_extension = data_name if not new_synthetic else f'seed={random_data_seed}'
             outer_directory = f'experiments/{dataname_extension}'
@@ -254,12 +269,12 @@ if __name__ == '__main__':
             solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
             model_tag = model_name_shortener.get(model_type, model_type)
             dirname = f'{outer_directory}/{model_tag}_val={test_size}_tau={round(tau,decimal_size)}{error_tag}{equal_error_tag}'
-
-            for alg_spec in [[False, False, False], [False, False, True], [False, True, False], [False, True, True], [True, True, False]]:
+        
+            for alg_spec in [[False, False, False], [True, True, False], [False, False, True]]:
                 # Assign values from alg_spec to strategic_learner and strategic_agent
-                strategic_learner[0] = alg_spec[0]
-                strategic_learner[1] = alg_spec[2]    
-                strategic_agent = alg_spec[1]
+                strategic_learner[0] = alg_spec[0]  # Is learner strategic in training?
+                strategic_learner[1] = alg_spec[2]  # Does learner shift its classifier in test time?   
+                strategic_agent = alg_spec[1]       # Are agents strategic in training time?
                 curr_index = strategic_learner[0] * 4 + strategic_learner[1] * 2 + strategic_agent
 
                 if not use_multiple_gammas:
@@ -278,7 +293,6 @@ if __name__ == '__main__':
                         print('solver:', logistic_solver)
                         print('max_iterations:', max_logi_iters)
                         print('tol:', tol)
-
                     if relaxed:
                         print('gamma:', gamma)
                     if test_size > 0.0:
@@ -304,12 +318,13 @@ if __name__ == '__main__':
                                 n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay, hidden_sizes=hidden_sizes,
                                 save_plots=save_plots, dirname=dirname, 
                                 strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                                tau=tau, scale=scale, curr_idx = curr_index,
+                                tau=tau, tau_vector=tau_vector,
+                                learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
+                                learner_tau_step = 0.1, curr_idx = curr_index,
                                 max_error=curr_max_error, avg_error=curr_avg_error, 
                                 val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
                     max_error[t][tau][curr_index] = curr_max_error[curr_index]
                     avg_error[t][tau][curr_index] = curr_avg_error[curr_index]
-
                     val_max_error[t][tau][curr_index] = curr_val_max_error[curr_index]
                     val_avg_error[t][tau][curr_index] = curr_val_avg_error[curr_index]
 
@@ -362,7 +377,9 @@ if __name__ == '__main__':
                                         hidden_sizes=hidden_sizes,
                                         save_plots=save_intermediate_plots, dirname=dirname,
                                         strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                                        tau=tau, scale=scale, curr_idx = curr_index,
+                                        tau=tau, tau_vector=tau_vector,
+                                        learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
+                                        learner_tau_step = 0.1, curr_idx = curr_index,
                                         max_error=curr_max_error, avg_error=curr_avg_error, 
                                         val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
                         print(f'With our non-relaxed simulation, we found the range of feasible gammas to be ' +
@@ -398,6 +415,18 @@ if __name__ == '__main__':
                     else:
                         raise Exception(f'Invalid error type: {error_type}')
 
+                    # Write parameters to file
+                    params_list = [f'model_index = {model_index}', f'error_type = {error_type}', f'numsteps = {numsteps}', f'a = {a}',
+                                   f'b = {b}',
+                                   f'scale_eta_by_label_range = {scale_eta_by_label_range}', f'test_size = {test_size}',
+                                   f'fit_intercept={fit_intercept}', f'tol={tol}', f'logistic_solver={logistic_solver}',
+                                   f'max_logi_iters = {max_logi_iters}',
+                                   f'random_split_seed = {random_split_seed}',
+                                   f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
+                                   f'gamma = {gamma if relaxed else 0.0}',
+                                   f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
+                                   f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
+                                   f'tau_group_values = {tau_group_values}']
                     gammas = []
                     #total_steps_per_gamma = []  # need to track the length until convergence for each run individually
                     #max_grp_errs = []
@@ -454,7 +483,9 @@ if __name__ == '__main__':
                                         hidden_sizes=hidden_sizes,
                                         save_plots=save_intermediate_plots, dirname=dirname + f'/Gamma={gamma}/',
                                         strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                                        tau=tau, scale=scale, curr_idx = curr_index,
+                                        tau=tau, tau_vector=tau_vector,
+                                        learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
+                                        learner_tau_step = 0.1, curr_idx = curr_index,
                                         max_error=curr_max_error, avg_error=curr_avg_error, 
                                         val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
                         # Max groups errors and pop errors of the final mixture for a pareto curve
@@ -502,8 +533,7 @@ if __name__ == '__main__':
                                f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
                                f'gamma = {gamma if relaxed else 0.0}',
                                f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
-                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
-                               f'{scale:.2e}']
+                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}']
 
                 synethetic_list = []
                 if use_preconfigured_dataset and data_index == 0 and not read_from_file:
@@ -516,10 +546,7 @@ if __name__ == '__main__':
                                         f'num_uniform_features = {num_uniform_features}'])
 
                 write_params_to_os(outer_directory, params_list)
-    if not use_multiple_gammas:
-        plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
-                        val_max_error, val_avg_error, tau, display_plots=False)
-    else:
+    if use_multiple_gammas:
         do_pareto_plot(gammas, max_error, avg_error,
                    error_type, pop_err_type,
                    save_plots, dirname,
@@ -528,4 +555,6 @@ if __name__ == '__main__':
                    data_name=data_name, show_basic_plots=use_basic_plots,
                    val_max_grp_errs=val_max_error, val_pop_errs=val_avg_error,
                    test_size=test_size)
+    plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
+                       val_max_error, val_avg_error, tau, display_plots=False)
 
