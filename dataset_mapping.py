@@ -42,7 +42,7 @@ def get_dataset_features(dataset):
         group = 'pluralityRace'
         usable_features = None  # all
         categorical_columns = []
-        is_categorical = True
+        is_categorical = True 
     elif dataset == 'Adult':
         path = 'datasets/adult_cleaned.csv'
         label = 'income'  # binary <50k or not
@@ -64,7 +64,7 @@ def get_dataset_features(dataset):
         group = 'sex'  # TBD
         usable_features = None  # all
         categorical_columns = ['Medu', 'Fedu', 'famrel', 'freetime', 'goout', 'Dalc', 'Walc', 'health', 'absenses']
-        is_categorical = True    
+        is_categorical = True
     elif dataset == 'Bike':
         path = 'datasets/SeoulBikeData.csv'
         label = 'Rented Bike Count'
@@ -95,7 +95,7 @@ def get_dataset_features(dataset):
         group = 'sex'
         usable_features = None
         categorical_columns = []
-        is_categorical = False
+        is_categorical = True 
     elif dataset == 'Marketing(Full)':
         path = 'datasets/bank-full.csv'
         label = 'y'

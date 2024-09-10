@@ -23,11 +23,11 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-
 tau_min = 0
 tau_max = 12
 tau_step = 0.5
 #scale = 1
+num_rounds = 8 
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -60,7 +60,7 @@ convergence_threshold = 1e-12  # Converge early if max change in sampleweights b
 
 # Relaxed Model Settings
 use_multiple_gammas = False  # Set to True to run relaxed algo over many values of gamma
-num_gammas = 5  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
+num_gammas = 1  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
 gamma = 0.0  # Max groups error if using relaxed variant
@@ -101,14 +101,14 @@ is_categorical = True  # Denotes whether labels are categeorical (classification
 use_preconfigured_dataset = True  # Set to True and select a data_index to use an existing dataset (or synthetic data)
 datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'Adult', 6: 'Student',
             7: 'Bike', 8: 'Credit', 9: 'Fires', 10: 'Wine', 11: 'Heart', 12: 'Marketing(Small)', 13: 'Marketing(Full)',
-            14: 'COMPAS_race_and_gender', 15: 'Student_binary', 
+            14: 'COMPAS_race_and_gender', 15: 'Student_binary',
             0: 'Synthetic'}
 #Good Datasets: COMPAS, 
 #Adult does not converge. But still good for showing the difference
 
 # 1, 4, , 8, 11
  
-data_index = 11  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 1  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -136,12 +136,12 @@ num_uniform_features = 0  # How many of the "numdims" features should be uniform
 intercept_scale = 2  # Coefficient on randomly generated` intercept for each groups  (0.0 means no intercept)
 
 # Plot/output settings
-verbose = True  # enables verbose output for doLearning
+verbose = False  # enables verbose output for doLearning
 display_plots = False 
-display_intermediate_plots = False  # Whether or not to display intermediate plots in during relaxation
+display_intermediate_plots = False # Whether or not to display intermediate plots in during relaxation
 use_basic_plots = False  # Whether or not we want to save/display the simple gamma vs error plots
 show_legend = True  # Denotes if the plots show the legend 
-use_input_commands = True  # Enables 'input(next)' to delay plots until entry into terminal
+use_input_commands = False  # Enables 'input(next)' to delay plots until entry into terminal
 dirname = 'auto-Results'  # Specifies which directory to save to, recommend to prefix with 'auto-'
 # NOTE: Use dirname == '' or 'auto-<OUTER DIRECTORY>' to use automatically generated inner folder name
 
@@ -232,319 +232,324 @@ if __name__ == '__main__':
     # Allows us to give shorter names to our folders
     model_name_shortener = {'PairedRegressionClassifier': 'PRC', 'LinearRegression': 'LinReg',
                             'LogisticRegression': 'LogReg', 'LinearSVM': 'SVM'}
-                            
-    avg_error = defaultdict(lambda: [0] * 6)
-    max_error = defaultdict(lambda: [0] * 6)
-    val_avg_error = defaultdict(lambda: [0] * 6)
-    val_max_error = defaultdict(lambda: [0] * 6)
-    tau_list = [round(i * tau_step, decimal_size) for i in range(tau_min, tau_max + 1)]
-    
+    tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
     # tau_group_values indicate the fraction of tau values each group is using. 
     # group i budget is tau_group_values[i] * tau
     tau_group_values = np.ones(np.array(group_names).flatten().shape, dtype=float)
     
-    #Manually set the fraction of group budgets.
-    #tau_group_values[3] = .1
-    #tau_group_values[2] = .1
-    #tau_group_values[1] = 1
-    #tau_group_values[0] = .5
-    
-    for tau in tau_list:                            
-        # For plotting purpose, aggerate the performance of differenc methods over all values of tau in the list
-        curr_avg_error = [0] * 6
-        curr_max_error = [0] * 6
-        curr_val_avg_error = [0] * 6
-        curr_val_max_error = [0] * 6
+    avg_error = []
+    max_error = []
+    val_avg_error = []
+    val_max_error = []
+    #Emily hacky correction for upping seed each round
+    random_split_seed -=1
+    for t in range(num_rounds):
+        random_split_seed +=1
+        avg_error.append(defaultdict(lambda: [0] * 6))
+        max_error.append(defaultdict(lambda: [0] * 6))
+        val_avg_error.append(defaultdict(lambda: [0] * 6))
+        val_max_error.append(defaultdict(lambda: [0] * 6))
+        for tau in tau_list:                            
+            curr_avg_error = [0] * 6 
+            curr_max_error = [0] * 6
+            curr_val_avg_error = [0] * 6
+            curr_val_max_error = [0] * 6
         
-        # Initialize tau vector. Different groups with different tau values        
-        flattened_grouplabels = grouplabels.flatten()
-        tau_vector = (tau_group_values[flattened_grouplabels]) * tau
+            # Initialize tau vector. Different groups with different tau values        
+            flattened_grouplabels = grouplabels.flatten()
+            tau_vector = (tau_group_values[flattened_grouplabels]) * tau
+            # Initially, we set the learner_tau equal to the mean value. However, we want to learn this value too. 
+            learner_tau_mean = np.mean(tau_vector)
+            learner_tau_min_frac = np.min(tau_group_values)
+            learner_tau_max_frac = np.max(tau_group_values)    
+
+            dataname_extension = data_name if not new_synthetic else f'seed={random_data_seed}'
+            outer_directory = f'experiments/{dataname_extension}'
+            error_tag = '_' + (error_type if error_type != '0/1 Loss' else '0-1 Loss')
+            equal_error_tag = '_equal-error' if equal_error else ''
+            solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
+            model_tag = model_name_shortener.get(model_type, model_type)
+            dirname = f'{outer_directory}/{model_tag}_val={test_size}_tau={round(tau,decimal_size)}{error_tag}{equal_error_tag}'
         
-        # Initially, we set the learner_tau equal to the mean value. However, we want to learn this value too. 
-        learner_tau_mean = np.mean(tau_vector)
-        learner_tau_min_frac = np.min(tau_group_values)
-        learner_tau_max_frac = np.max(tau_group_values)    
+            for alg_spec in [[False, False, False], [True, True, False], [False, False, True]]:
+                # Assign values from alg_spec to strategic_learner and strategic_agent
+                strategic_learner[0] = alg_spec[0]  # Is learner strategic in training?
+                strategic_learner[1] = alg_spec[2]  # Does learner shift its classifier in test time?   
+                strategic_agent = alg_spec[1]       # Are agents strategic in training time?
+                curr_index = strategic_learner[0] * 4 + strategic_learner[1] * 2 + strategic_agent
 
-        
-        dataname_extension = data_name if not new_synthetic else f'seed={random_data_seed}'
-        outer_directory = f'experiments/{dataname_extension}_({tau_group_values})'
-        error_tag = '_' + (error_type if error_type != '0/1 Loss' else '0-1 Loss')
-        equal_error_tag = '_equal-error' if equal_error else ''
-        solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
-        model_tag = model_name_shortener.get(model_type, model_type)
-        dirname = f'{outer_directory}/{model_tag}_val={test_size}_tau={round(tau,decimal_size)}{error_tag}{equal_error_tag}'
+                if not use_multiple_gammas:
+                    print(f'Executing main with the following parameters: \n \n\
+                    model: {model_type} \n \
+                    dataset: {data_name}\n \
+                    numrounds: {numsteps}\n \
+                    a: {a}\n \
+                    b: {b}\n \
+                    test_size = {test_size}\n \
+                    error_type: {error_type}')
+                    print('relaxed:', relaxed)
 
-        for alg_spec in [[False, False, False], [True, True, False], [False, False, True]]:
-            
-            # Assign values from alg_spec to strategic_learner and strategic_agent
-            strategic_learner[0] = alg_spec[0]  # Is learner strategic in training?
-            strategic_learner[1] = alg_spec[2]  # Does learner shift its classifier in test time?   
-            strategic_agent = alg_spec[1]       # Are agents strategic in training time?
-            curr_index = strategic_learner[0] * 4 + strategic_learner[1] * 2 + strategic_agent
+                    if model_type == 'LogisticRegression':
+                        print('fit_intercept:', fit_intercept)
+                        print('solver:', logistic_solver)
+                        print('max_iterations:', max_logi_iters)
+                        print('tol:', tol)
+                    if relaxed:
+                        print('gamma:', gamma)
+                    if test_size > 0.0:
+                        print('random_split_seed:', random_split_seed)
+                    if new_synthetic:
+                        print('numdims:', numdims)
+                        print('gaussian noise in y:', noise)
+                        print('numsamples:', numsamples)
+                        print('random_data_seed:', random_data_seed)
 
-            if not use_multiple_gammas:
-                print(f'Executing main with the following parameters: \n \n\
-                model: {model_type} \n \
-                dataset: {data_name}\n \
-                numrounds: {numsteps}\n \
-                a: {a}\n \
-                b: {b}\n \
-                test_size = {test_size}\n \
-                error_type: {error_type}')
-                print('relaxed:', relaxed)
+                    do_learning(X, y, numsteps, grouplabels, a, b, equal_error=equal_error,
+                                scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
+                                group_names=group_names, group_types=group_types, data_name=data_name,
+                                gamma=gamma, relaxed=relaxed, random_split_seed=random_split_seed,
+                                verbose=verbose, use_input_commands=use_input_commands,
+                                error_type=error_type, extra_error_types=extra_error_types, pop_error_type=pop_error_type,
+                                convergence_threshold=convergence_threshold,
+                                show_legend=show_legend, save_models=save_models,
+                                display_plots=display_plots,
+                                test_size=test_size,
+                                fit_intercept=fit_intercept, logistic_solver=logistic_solver,
+                                max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
+                                n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay, hidden_sizes=hidden_sizes,
+                                save_plots=save_plots, dirname=dirname, 
+                                strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
+                                tau=tau, tau_vector=tau_vector,
+                                learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
+                                learner_tau_step = 0.1, curr_idx = curr_index,
+                                max_error=curr_max_error, avg_error=curr_avg_error, 
+                                val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
+                    max_error[t][tau][curr_index] = curr_max_error[curr_index]
+                    avg_error[t][tau][curr_index] = curr_avg_error[curr_index]
+                    val_max_error[t][tau][curr_index] = curr_val_max_error[curr_index]
+                    val_avg_error[t][tau][curr_index] = curr_val_avg_error[curr_index]
 
-                if model_type == 'LogisticRegression':
-                    print('fit_intercept:', fit_intercept)
-                    print('solver:', logistic_solver)
-                    print('max_iterations:', max_logi_iters)
-                    print('tol:', tol)
-
-                if relaxed:
-                    print('gamma:', gamma)
-                if test_size > 0.0:
-                    print('random_split_seed:', random_split_seed)
-                if new_synthetic:
-                    # print('numgroups:', numgroups)
-                    print('numdims:', numdims)
-                    print('gaussian noise in y:', noise)
-                    print('numsamples:', numsamples)
-                    print('random_data_seed:', random_data_seed)
-                
-                do_learning(X, y, numsteps, grouplabels, a, b, equal_error=equal_error,
-                            scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
-                            group_names=group_names, group_types=group_types, data_name=data_name,
-                            gamma=gamma, relaxed=relaxed, random_split_seed=random_split_seed,
-                            verbose=verbose, use_input_commands=use_input_commands,
-                            error_type=error_type, extra_error_types=extra_error_types, pop_error_type=pop_error_type,
-                            convergence_threshold=convergence_threshold,
-                            show_legend=show_legend, save_models=save_models,
-                            display_plots=display_plots,
-                            test_size=test_size,
-                            fit_intercept=fit_intercept, logistic_solver=logistic_solver,
-                            max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
-                            n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay, hidden_sizes=hidden_sizes,
-                            save_plots=save_plots, dirname=dirname, 
-                            strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                            tau = tau, tau_vector = tau_vector, 
-                            learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
-                            learner_tau_step = 0.1, curr_idx = curr_index,
-                            max_error=curr_max_error, avg_error=curr_avg_error, 
-                            val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
-
-                max_error[tau][curr_index] = curr_max_error[curr_index]
-                avg_error[tau][curr_index] = curr_avg_error[curr_index]
-
-                val_max_error[tau][curr_index] = curr_val_max_error[curr_index]
-                val_avg_error[tau][curr_index] = curr_val_avg_error[curr_index]
-
-            # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
-            else:
-                print('Starting a multi-round relaxed simulation over many values of gamma.')
-                print('To run a single simulation, set `plot_multiple_gammas` to False')
-                print(f'Here are the baseline parameters: \n \n \
-                model: {model_type} \n \
-                dataset: {data_name}\n \
-                num_rounds: {numsteps}\n \
-                num_gammas: {num_gammas}\n \
-                a: {a}\n \
-                b: {b}\n \
-                test_size = {test_size}\n \
-                error_type: {error_type}')
-
-                if model_type == 'LogisticRegression':
-                    print('fit_intercept:', fit_intercept)
-                    print('solver:', logistic_solver)
-                    print('max_iterations:', max_logi_iters)
-                    print('tol:', tol)
-                    print()
-
-                if test_size > 0.0:
-                    print('random_split_seed:', random_split_seed)
-                if new_synthetic:
-                    # print('numgroups:', numgroups)
-                    print('numdims:', numdims)
-                    print('gaussian noise in y:', noise)
-                    print('numsamples:', numsamples)
-                    print('random_data_seed:', random_data_seed)
-                    print()
-
-                if error_type in ['MSE', '0/1 Loss', 'Log-Loss']:
-                    minimax_err, max_err, initial_pop_err, agg_grouperrs, agg_poperrs, _, pop_err_type, total_steps, _, _, _, \
-                    _, _, _ = \
-                        do_learning(X, y, numsteps, grouplabels, a, b, equal_error=False,
-                                    scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
-                                    gamma=0.0, relaxed=False, random_split_seed=random_split_seed,
-                                    group_names=group_names, group_types=group_types, data_name=data_name,
-                                    verbose=verbose, use_input_commands=use_input_commands,
-                                    error_type=error_type, extra_error_types=extra_error_types, pop_error_type=pop_error_type,
-                                    convergence_threshold=convergence_threshold,
-                                    show_legend=show_legend, save_models=False,
-                                    display_plots=display_intermediate_plots,
-                                    test_size=test_size, fit_intercept=fit_intercept, logistic_solver=logistic_solver,
-                                    max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
-                                    n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay,
-                                    hidden_sizes=hidden_sizes,
-                                    save_plots=save_intermediate_plots, dirname=dirname, 
-                                    strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
-                                    tau_vector=tau_vector, learner_tau = learner_tau, curr_idx = curr_index,
-                                    max_error=curr_max_error, avg_error=curr_avg_error, 
-                                    val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
-
-                    print(f'With our non-relaxed simulation, we found the range of feasible gammas to be ' +
-                          f'[{minimax_err}, {max_err}]')
-
-                # In the FP, FN case, simply try all values between 0 and the groups error achieved with min pop error
-                # Instead of accepting a max error rate of 1, we only need to accept the max error rate when pop error
-                # is minimized (this may not be exactly true due to heuristic nature of classification)
-                elif error_type in ['FP', 'FN', 'FP-Log-Loss', 'FN-Log-Loss']:
-                    numrounds = 1 if not equal_error else numsteps
-                    disp_plots = equal_error  # If we are in equal error case, then we display plots
-                    verb = verbose and equal_error
-
-                    # Run a single run to find the max groups error when pop error is minimized
-                    minimax_err, max_err, initial_pop_err, _, _, _, pop_err_type, total_steps, _, _, _, _, _, _ = \
-                        do_learning(X, y, numrounds, grouplabels, a, b, equal_error=equal_error,
-                                    scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
-                                    fit_intercept=fit_intercept, logistic_solver=logistic_solver,
-                                    convergence_threshold=convergence_threshold,
-                                    max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
-                                    n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay,
-                                    hidden_sizes=hidden_sizes,
-                                    gamma=0.0, relaxed=False, random_split_seed=random_split_seed,
-                                    group_names=group_names, group_types=group_types, data_name=data_name,
-                                    verbose=verb, use_input_commands=False,
-                                    error_type=error_type, display_plots=disp_plots, test_size=test_size)
-                    if not equal_error:
-                        # We can always drive FP/FN rates to 0 by always predicting negative/positive
-                        minimax_err = 0
-                        print(f'We found the range of feasible gammas to be [{minimax_err}, {max_err}]')
-                    else:
-                        print(f'We will try the single value for gamma = {minimax_err}')
-
+                # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
                 else:
-                    raise Exception(f'Invalid error type: {error_type}')
+                    print('Starting a multi-round relaxed simulation over many values of gamma.')
+                    print('To run a single simulation, set `plot_multiple_gammas` to False')
+                    print(f'Here are the baseline parameters: \n \n \
+                    model: {model_type} \n \
+                    dataset: {data_name}\n \
+                    num_rounds: {numsteps}\n \
+                    num_gammas: {num_gammas}\n \
+                    a: {a}\n \
+                    b: {b}\n \
+                    test_size = {test_size}\n \
+                    error_type: {error_type}')
 
-                gammas = []
-                total_steps_per_gamma = []  # need to track the length until convergence for each run individually
-                max_grp_errs = []
-                pop_errs = []
-                trajectories = []
-                bonus_plot_list = []
-
-                val_max_grp_errs = []
-                val_pop_errs = []
-                val_trajectories = []
-                val_bonus_plot_list = []
-
-                increment = (max_err - minimax_err) / num_gammas  # NOTE: `max_err` is defined over all subgroups
-                if increment == 0:
-                    assert max_err == minimax_err  # this should be the only way increment is 0
-                    warnings.warn(f'WARNING: Range of feasible gammas consists of only 1 value: {minimax_err}.'
-                                  ' Running a single simulation with this value...')
-                    gamma_list = [minimax_err]
-
-                else:
-                    gamma_list = np.arange(minimax_err, max_err + increment, increment)
-
-                # If we are using equal error, then we only care about minimax s.t. all errors below that
-                if equal_error:
-                    gamma_list = [minimax_err]
-
-                # Perform one iteration for each value of gamma
-                for gamma in gamma_list:
-                    # Skip gammas that are unnecessarily loose as a result of rounding while including endpoint
-                    if gamma > max_err and len(gamma_list) > 1:
-                        print(f'Skipping overly loose gamma value: {gamma}')
-                        continue
-                    print(f'Starting relaxed learning with gamma = {gamma}...')
-                    (max_grp_err, _, _, agg_grouperrs, agg_poperrs, bonus_plots, pop_err_type, total_steps, _,
-                     val_grp_err, val_pop_err, val_agg_grouperrs, val_agg_poperrs, val_bonus_plots) = \
-                        do_learning(X, y, numsteps, grouplabels, a, b, equal_error=False,
-                                    scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
-                                    gamma=gamma, relaxed=True,
-                                    random_split_seed=random_split_seed,
-                                    group_names=group_names, group_types=group_types, data_name=data_name,
-                                    verbose=verbose, use_input_commands=use_input_commands,
-                                    error_type=error_type, extra_error_types=extra_error_types, pop_error_type=pop_error_type,
-                                    convergence_threshold=convergence_threshold,
-                                    show_legend=show_legend, save_models=save_models,
-                                    display_plots=display_intermediate_plots,
-                                    test_size=test_size, fit_intercept=fit_intercept, logistic_solver=logistic_solver,
-                                    max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
-                                    n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay,
-                                    hidden_sizes=hidden_sizes,
-                                    save_plots=save_intermediate_plots, dirname=dirname + f'/Gamma={gamma}/')
-
-                    # Max groups errors and pop errors of the final mixture for a pareto curve
-                    gammas.append(gamma)
-                    total_steps_per_gamma.append(total_steps)
-                    max_grp_errs.append(max_grp_err)
-                    pop_errs.append(agg_poperrs[-1])
-
-                    # Stack the grouperrs across all groups types and then make trajectories
-                    agg_grouperrs_stacked = np.column_stack(agg_grouperrs)
-                    xs = agg_poperrs
-                    ys = np.max(agg_grouperrs_stacked, axis=1)
-                    trajectories.append((xs, ys))
-
-                    # NOTE: bonus plots are "stacked" bonus plots (i.e. we stack all subgroups across grouptypes)
-                    bonus_plot_list.append(bonus_plots)
+                    if model_type == 'LogisticRegression':
+                        print('fit_intercept:', fit_intercept)
+                        print('solver:', logistic_solver)
+                        print('max_iterations:', max_logi_iters)
+                        print('tol:', tol)
+                        print()
 
                     if test_size > 0.0:
-                        val_max_grp_errs.append(val_grp_err)
-                        val_pop_errs.append(val_agg_poperrs[-1])
+                        print('random_split_seed:', random_split_seed)
+                    if new_synthetic:
+                        # print('numgroups:', numgroups)
+                        print('numdims:', numdims)
+                        print('gaussian noise in y:', noise)
+                        print('numsamples:', numsamples)
+                        print('random_data_seed:', random_data_seed)
+                        print()
 
-                        val_agg_grouperrs_stacked = np.column_stack(val_agg_grouperrs)
-                        val_x = val_agg_poperrs
-                        val_y = np.max(val_agg_grouperrs_stacked, axis=1)
-                        val_trajectories.append((val_x, val_y))
-                        val_bonus_plot_list.append(val_bonus_plots)
+                    if error_type in ['MSE', '0/1 Loss', 'Log-Loss']:
+                        minimax_err, max_err, initial_pop_err, agg_grouperrs, agg_poperrs, _, pop_err_type, total_steps, _, _, _, \
+                        _, _, _ = \
+                            do_learning(X, y, numsteps, grouplabels, a, b, equal_error=False,
+                                        scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
+                                        gamma=0.0, relaxed=False, random_split_seed=random_split_seed,
+                                        group_names=group_names, group_types=group_types, data_name=data_name,
+                                        verbose=verbose, use_input_commands=use_input_commands,
+                                        error_type=error_type, extra_error_types=extra_error_types, pop_error_type=pop_error_type,
+                                        convergence_threshold=convergence_threshold,
+                                        show_legend=show_legend, save_models=False,
+                                        display_plots=display_intermediate_plots,
+                                        test_size=test_size, fit_intercept=fit_intercept, logistic_solver=logistic_solver,
+                                        max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
+                                        n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay,
+                                        hidden_sizes=hidden_sizes,
+                                        save_plots=save_intermediate_plots, dirname=dirname,
+                                        strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
+                                        tau=tau, scale=scale, curr_idx = curr_index,
+                                        max_error=curr_max_error, avg_error=curr_avg_error, 
+                                        val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
+                        print(f'With our non-relaxed simulation, we found the range of feasible gammas to be ' +
+                              f'[{minimax_err}, {max_err}]')
+                    # In the FP, FN case, simply try all values between 0 and the groups error achieved with min pop error
+                    # Instead of accepting a max error rate of 1, we only need to accept the max error rate when pop error
+                    # is minimized (this may not be exactly true due to heuristic nature of classification)
+                    elif error_type in ['FP', 'FN', 'FP-Log-Loss', 'FN-Log-Loss']:
+                        numrounds = 1 if not equal_error else numsteps
+                        disp_plots = equal_error  # If we are in equal error case, then we display plots
+                        verb = verbose and equal_error
 
-                # End of relaxed simulations over all gammas
+                        # Run a single run to find the max groups error when pop error is minimized
+                        minimax_err, max_err, initial_pop_err, _, _, _, pop_err_type, total_steps, _, _, _, _, _, _ = \
+                            do_learning(X, y, numrounds, grouplabels, a, b, equal_error=equal_error,
+                                        scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
+                                        fit_intercept=fit_intercept, logistic_solver=logistic_solver,
+                                        convergence_threshold=convergence_threshold,
+                                        max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
+                                        n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay,
+                                        hidden_sizes=hidden_sizes,
+                                        gamma=0.0, relaxed=False, random_split_seed=random_split_seed,
+                                        group_names=group_names, group_types=group_types, data_name=data_name,
+                                        verbose=verb, use_input_commands=False,
+                                        error_type=error_type, display_plots=disp_plots, test_size=test_size)
+                        if not equal_error:
+                            # We can always drive FP/FN rates to 0 by always predicting negative/positive
+                            minimax_err = 0
+                            print(f'We found the range of feasible gammas to be [{minimax_err}, {max_err}]')
+                        else:
+                            print(f'We will try the single value for gamma = {minimax_err}')
 
-                # Plot the results and save as necessary
-                if test_size > 0.0:
-                    do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories,
-                                   total_steps, error_type, pop_err_type,
-                                   save_plots, dirname,
-                                   model_type,
-                                   use_input_commands,
-                                   data_name=data_name, bonus_plot_list=bonus_plot_list, show_basic_plots=use_basic_plots,
-                                   val_max_grp_errs=val_max_grp_errs, val_pop_errs=val_pop_errs,
-                                   val_trajectories=val_trajectories, val_bonus_plot_list=val_bonus_plot_list,
-                                   test_size=test_size)
-                else:
-                    do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories,
-                                   total_steps, error_type, pop_err_type,
-                                   save_plots, dirname,
-                                   model_type,
-                                   use_input_commands,
-                                   data_name=data_name, bonus_plot_list=bonus_plot_list,
-                                   show_basic_plots=use_basic_plots)
+                    else:
+                        raise Exception(f'Invalid error type: {error_type}')
 
-            # Write parameters to file
-            params_list = [f'model_index = {model_index}', f'error_type = {error_type}', f'numsteps = {numsteps}', f'a = {a}',
-                           f'b = {b}',
-                           f'scale_eta_by_label_range = {scale_eta_by_label_range}', f'test_size = {test_size}',
-                           f'fit_intercept={fit_intercept}', f'tol={tol}', f'logistic_solver={logistic_solver}',
-                           f'max_logi_iters = {max_logi_iters}',
-                           f'random_split_seed = {random_split_seed}',
-                           f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
-                           f'gamma = {gamma if relaxed else 0.0}',
-                           f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
-                           f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
-                           f'tau_group_values = {tau_group_values}']
+                    # Write parameters to file
+                    params_list = [f'model_index = {model_index}', f'error_type = {error_type}', f'numsteps = {numsteps}', f'a = {a}',
+                                   f'b = {b}',
+                                   f'scale_eta_by_label_range = {scale_eta_by_label_range}', f'test_size = {test_size}',
+                                   f'fit_intercept={fit_intercept}', f'tol={tol}', f'logistic_solver={logistic_solver}',
+                                   f'max_logi_iters = {max_logi_iters}',
+                                   f'random_split_seed = {random_split_seed}',
+                                   f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
+                                   f'gamma = {gamma if relaxed else 0.0}',
+                                   f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
+                                   f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
+                                   f'tau_group_values = {tau_group_values}']
+                    gammas = []
+                    total_steps_per_gamma = []  # need to track the length until convergence for each run individually
+                    max_grp_errs = []
+                    pop_errs = []
+                    trajectories = []
+                    bonus_plot_list = []
 
-            synethetic_list = []
-            if use_preconfigured_dataset and data_index == 0 and not read_from_file:
-                params_list.extend([f'numsamples = {numsamples}', f'num_group_types = {num_group_types}',
-                                    f'numdims = {numdims}', f'noise = {noise}',
-                                    f'random_data_seed = {random_data_seed}',
-                                    f'mean_range = {mean_range}',
-                                    f'variability = {variability}',
-                                    f'intercept_scale = {intercept_scale}',
-                                    f'num_uniform_features = {num_uniform_features}'])
+                    val_max_grp_errs = []
+                    val_pop_errs = []
+                    val_trajectories = []
+                    val_bonus_plot_list = []
 
-            write_params_to_os(outer_directory, params_list)
+                    increment = (max_err - minimax_err) / num_gammas  # NOTE: `max_err` is defined over all subgroups
+                    if increment == 0:
+                        assert max_err == minimax_err  # this should be the only way increment is 0
+                        warnings.warn(f'WARNING: Range of feasible gammas consists of only 1 value: {minimax_err}.'
+                                      ' Running a single simulation with this value...')
+                        gamma_list = [minimax_err]
+
+                    else:
+                        gamma_list = np.arange(minimax_err, max_err + increment, increment)
+
+                    # If we are using equal error, then we only care about minimax s.t. all errors below that
+                    if equal_error:
+                        gamma_list = [minimax_err]
+
+                    # Perform one iteration for each value of gamma
+                    for gamma in gamma_list:
+                        # Skip gammas that are unnecessarily loose as a result of rounding while including endpoint
+                        if gamma > max_err and len(gamma_list) > 1:
+                            print(f'Skipping overly loose gamma value: {gamma}')
+                            continue
+                        print(f'Starting relaxed learning with gamma = {gamma}...')
+                        (max_grp_err, _, _, agg_grouperrs, agg_poperrs, bonus_plots, pop_err_type, total_steps, _,
+                         val_grp_err, val_pop_err, val_agg_grouperrs, val_agg_poperrs, val_bonus_plots) = \
+                            do_learning(X, y, numsteps, grouplabels, a, b, equal_error=False,
+                                        scale_eta_by_label_range=scale_eta_by_label_range, model_type=model_type,
+                                        gamma=gamma, relaxed=True,
+                                        random_split_seed=random_split_seed,
+                                        group_names=group_names, group_types=group_types, data_name=data_name,
+                                        verbose=verbose, use_input_commands=use_input_commands,
+                                        error_type=error_type, extra_error_types=extra_error_types, pop_error_type=pop_error_type,
+                                        convergence_threshold=convergence_threshold,
+                                        show_legend=show_legend, save_models=save_models,
+                                        display_plots=display_intermediate_plots,
+                                        test_size=test_size, fit_intercept=fit_intercept, logistic_solver=logistic_solver,
+                                        max_logi_iters=max_logi_iters, tol=tol, penalty=penalty, C=C,
+                                        n_epochs=n_epochs, lr=lr, momentum=momentum, weight_decay=weight_decay,
+                                        hidden_sizes=hidden_sizes,
+                                        save_plots=save_intermediate_plots, dirname=dirname + f'/Gamma={gamma}/',
+                                        strategic_learner=strategic_learner, strategic_agent=strategic_agent, 
+                                        tau=tau, scale=scale, curr_idx = curr_index,
+                                        max_error=curr_max_error, avg_error=curr_avg_error, 
+                                        val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
+                        # Max groups errors and pop errors of the final mixture for a pareto curve
+                        gammas.append(gamma)
+                        total_steps_per_gamma.append(total_steps)
+                        max_grp_errs.append(max_grp_err)
+                        pop_errs.append(agg_poperrs[-1])
+
+                        # Stack the grouperrs across all groups types and then make trajectories
+                        agg_grouperrs_stacked = np.column_stack(agg_grouperrs)
+                        xs = agg_poperrs
+                        ys = np.max(agg_grouperrs_stacked, axis=1)
+                        trajectories.append((xs, ys))
+
+                        # NOTE: bonus plots are "stacked" bonus plots (i.e. we stack all subgroups across grouptypes)
+                        bonus_plot_list.append(bonus_plots)
+
+                        if test_size > 0.0:
+                            val_max_grp_errs.append(val_grp_err)
+                            val_pop_errs.append(val_agg_poperrs[-1])
+
+                            val_agg_grouperrs_stacked = np.column_stack(val_agg_grouperrs)
+                            val_x = val_agg_poperrs
+                            val_y = np.max(val_agg_grouperrs_stacked, axis=1)
+                            val_trajectories.append((val_x, val_y))
+                            val_bonus_plot_list.append(val_bonus_plots)
+
+                    # End of relaxed simulations over all gammas
+
+                    # Plot the results and save as necessary
+                    if test_size > 0.0:
+                        do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories,
+                                       total_steps, error_type, pop_err_type,
+                                       save_plots, dirname,
+                                       model_type,
+                                       use_input_commands,
+                                       data_name=data_name, bonus_plot_list=bonus_plot_list, show_basic_plots=use_basic_plots,
+                                       val_max_grp_errs=val_max_grp_errs, val_pop_errs=val_pop_errs,
+                                       val_trajectories=val_trajectories, val_bonus_plot_list=val_bonus_plot_list,
+                                       test_size=test_size)
+                    else:
+                        do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories,
+                                       total_steps, error_type, pop_err_type,
+                                       save_plots, dirname,
+                                       model_type,
+                                       use_input_commands,
+                                       data_name=data_name, bonus_plot_list=bonus_plot_list,
+                                       show_basic_plots=use_basic_plots)
+
+                # Write parameters to file
+                params_list = [f'model_index = {model_index}', f'error_type = {error_type}', f'numsteps = {numsteps}', f'a = {a}',
+                               f'b = {b}',
+                               f'scale_eta_by_label_range = {scale_eta_by_label_range}', f'test_size = {test_size}',
+                               f'fit_intercept={fit_intercept}', f'tol={tol}', f'logistic_solver={logistic_solver}',
+                               f'max_logi_iters = {max_logi_iters}',
+                               f'random_split_seed = {random_split_seed}',
+                               f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
+                               f'gamma = {gamma if relaxed else 0.0}',
+                               f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
+                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
+                               f'{scale:.2e}']
+
+                synethetic_list = []
+                if use_preconfigured_dataset and data_index == 0 and not read_from_file:
+                    params_list.extend([f'numsamples = {numsamples}', f'num_group_types = {num_group_types}',
+                                        f'numdims = {numdims}', f'noise = {noise}',
+                                        f'random_data_seed = {random_data_seed}',
+                                        f'mean_range = {mean_range}',
+                                        f'variability = {variability}',
+                                        f'intercept_scale = {intercept_scale}',
+                                        f'num_uniform_features = {num_uniform_features}'])
+
+                write_params_to_os(outer_directory, params_list)
     plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
                         val_max_error, val_avg_error, tau, display_plots=False)

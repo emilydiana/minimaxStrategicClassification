@@ -216,16 +216,45 @@ def pairwise_distance_distribution(X):
 def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error, 
                         val_max_error, val_avg_error, tau, display_plots = False):
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
-    tau_values = list(max_error.keys())
-
-    max_error_array = np.zeros((len(tau_values),6))
-    avg_error_array = np.zeros((len(tau_values),6))
-    write_error_array(avg_error, max_error, max_error_array, avg_error_array, tau_values, dirname, "")    
+    tau_values = list(max_error[0].keys())
+    #Loop through this and then aggregate results?
+    trials = len(max_error)
+    max_error_array = []
+    avg_error_array = []
+    val_max_error_array = []
+    val_avg_error_array = []
+    for t in range(trials):
+        max_error_array.append(np.zeros((len(tau_values),6)))
+        avg_error_array.append(np.zeros((len(tau_values),6)))
+        write_error_array(avg_error[t], max_error[t], max_error_array[t], avg_error_array[t], tau_values, dirname, "")    
     
-    val_max_error_array = np.zeros((len(tau_values),6))
-    val_avg_error_array = np.zeros((len(tau_values),6))
-    write_error_array(val_avg_error, val_max_error, val_max_error_array, val_avg_error_array, tau_values, dirname, "val-")    
-     
+        val_max_error_array.append(np.zeros((len(tau_values),6)))
+        val_avg_error_array.append(np.zeros((len(tau_values),6)))
+        write_error_array(val_avg_error[t], val_max_error[t], val_max_error_array[t], val_avg_error_array[t], tau_values, dirname, "val-")    
+    
+    #Make mean, upper, and lower arrays
+    mean_max_error_array = np.mean(max_error_array, axis=0)
+    max_conf = 1.96*np.std(max_error_array, axis=0)/np.sqrt(trials)
+
+    mean_avg_error_array = np.mean(avg_error_array, axis=0)
+    avg_conf = 1.96*np.std(avg_error_array, axis=0)/np.sqrt(len(avg_error_array[0]))
+    mean_val_max_error_array = np.mean(val_max_error_array, axis=0)
+    val_max_conf = 1.96*np.std(val_max_error_array, axis=0)/np.sqrt(len(val_max_error_array[0]))
+    mean_val_avg_error_array = np.mean(val_avg_error_array, axis=0)
+    val_avg_conf = 1.96*np.std(val_avg_error_array, axis=0)/np.sqrt(len(val_avg_error_array[0]))
+    #May need to threshold at 0
+    max_upper = mean_max_error_array + max_conf
+    max_lower = mean_max_error_array - max_conf
+
+    avg_upper = mean_avg_error_array + avg_conf
+    avg_lower = mean_avg_error_array - avg_conf
+    
+    val_max_upper = mean_val_max_error_array + val_max_conf
+    val_max_lower = mean_val_max_error_array - val_max_conf
+    
+    val_avg_upper = mean_val_avg_error_array + val_avg_conf
+    val_avg_lower = mean_val_avg_error_array - val_avg_conf
+
     figures = []
     figure_names = ['MaxGroupError', 'AvgPopError', 'val_MaxGroupError', 'val_AvgPopError']
     plt.ion()
@@ -233,14 +262,15 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
     learner_types = ['NN-F', '' , 'NN-A', '' , '' , 'SS-F']
     for learner in [0, 2, 5]:
+        tau_x_ticks = np.arange(0, len(mean_max_error_array[:, learner]))
         # Plots the groups with appropriate label
-        plt.plot(max_error_array[:, learner], label=learner_types[learner])
+        plt.plot(tau_x_ticks, mean_max_error_array[:, learner], label=learner_types[learner])
+        plt.fill_between(tau_x_ticks, max_upper[:, learner], max_lower[:, learner], alpha=0.1)
  
     plt.legend(loc='upper right')
     plt.title(f'Max Group (Tr) Erorr Comparison{dataset_string}')
     
     ## Changed 2 to 10
-    tau_x_ticks = np.arange(0, len(max_error_array[:, learner]))
     tau_x_labels = [str(tau_values[i]) if i % 10 == 0 else '' for i in range(len(tau_values))]
     plt.xticks(tau_x_ticks, tau_x_labels)
     
@@ -249,11 +279,11 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
 
     if display_plots:
         plt.show()
-    
     figures.append(plt.figure())
     for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
-        plt.plot(avg_error_array[:, learner], label=learner_types[learner])
+        plt.plot(tau_x_ticks, mean_avg_error_array[:, learner], label=learner_types[learner])
+        plt.fill_between(tau_x_ticks, avg_upper[:, learner], avg_lower[:, learner], alpha=0.1)
     
     plt.legend(loc='upper right')
     
@@ -269,12 +299,14 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
     for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
-        plt.plot(val_max_error_array[:, learner], label=learner_types[learner])
+        plt.plot(tau_x_ticks, mean_val_max_error_array[:, learner], label=learner_types[learner])
+        plt.fill_between(tau_x_ticks, val_max_upper[:, learner], val_max_lower[:, learner], alpha=0.1)
+
  
     plt.legend(loc='upper right')
     plt.title(f'Max Group (Ts) Erorr Comparison{dataset_string}')
     
-    tau_x_ticks = np.arange(0, len(val_max_error_array[:, learner]))
+    tau_x_ticks = np.arange(0, len(mean_val_max_error_array[:, learner]))
     tau_x_labels = [str(tau_values[i]) if i % 1 == 0 else '' for i in range(len(tau_values))]
     plt.xticks(tau_x_ticks, tau_x_labels)
     
@@ -287,7 +319,8 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     figures.append(plt.figure())
     for learner in [0, 2, 5]:
         # Plots the groups with appropriate label
-        plt.plot(val_avg_error_array[:, learner], label=learner_types[learner])
+        plt.plot(tau_x_ticks, mean_val_avg_error_array[:, learner], label=learner_types[learner])
+        plt.fill_between(tau_x_ticks, val_avg_upper[:, learner], val_avg_lower[:, learner], alpha=0.1)
     
     plt.legend(loc='upper right')
        
