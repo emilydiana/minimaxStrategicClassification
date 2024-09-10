@@ -23,7 +23,7 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-num_rounds = 8 
+num_rounds = 1
 tau_min = 1
 tau_max = 2
 tau_step = 0.25
@@ -59,7 +59,7 @@ fit_intercept = True  # If the linear model should fit an intercept (applies onl
 convergence_threshold = 1e-12  # Converge early if max change in sampleweights between rounds is less than threshold
 
 # Relaxed Model Settings
-use_multiple_gammas = False  # Set to True to run relaxed algo over many values of gamma
+use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
 num_gammas = 1  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
@@ -399,16 +399,21 @@ if __name__ == '__main__':
                         raise Exception(f'Invalid error type: {error_type}')
 
                     gammas = []
-                    total_steps_per_gamma = []  # need to track the length until convergence for each run individually
-                    max_grp_errs = []
-                    pop_errs = []
-                    trajectories = []
-                    bonus_plot_list = []
+                    #total_steps_per_gamma = []  # need to track the length until convergence for each run individually
+                    #max_grp_errs = []
+                    #pop_errs = []
+                    #trajectories = []
+                    #bonus_plot_list = []
 
-                    val_max_grp_errs = []
-                    val_pop_errs = []
-                    val_trajectories = []
-                    val_bonus_plot_list = []
+                    #val_max_grp_errs = []
+                    #val_pop_errs = []
+                    #val_trajectories = []
+                    #val_bonus_plot_list = []
+                        
+                    max_error[t][tau][curr_index]=[]
+                    avg_error[t][tau][curr_index]=[]
+                    val_max_error[t][tau][curr_index]=[]
+                    val_avg_error[t][tau][curr_index]=[]
 
                     increment = (max_err - minimax_err) / num_gammas  # NOTE: `max_err` is defined over all subgroups
                     if increment == 0:
@@ -453,51 +458,39 @@ if __name__ == '__main__':
                                         max_error=curr_max_error, avg_error=curr_avg_error, 
                                         val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
                         # Max groups errors and pop errors of the final mixture for a pareto curve
+                        #Leave this alone for strat class
                         gammas.append(gamma)
-                        total_steps_per_gamma.append(total_steps)
-                        max_grp_errs.append(max_grp_err)
-                        pop_errs.append(agg_poperrs[-1])
+                        #Don't plot this for strat class
+                        #total_steps_per_gamma.append(total_steps)
+                        #Change form of these next two arrays
+                        max_error[t][tau][curr_index].append(curr_max_error[curr_index])
+                        avg_error[t][tau][curr_index].append(curr_avg_error[curr_index])
+                        val_max_error[t][tau][curr_index].append(curr_val_max_error[curr_index])
+                        val_avg_error[t][tau][curr_index].append(curr_val_avg_error[curr_index])
+
+                        #max_grp_errs.append(max_grp_err)
+                        #pop_errs.append(agg_poperrs[-1])
 
                         # Stack the grouperrs across all groups types and then make trajectories
-                        agg_grouperrs_stacked = np.column_stack(agg_grouperrs)
-                        xs = agg_poperrs
-                        ys = np.max(agg_grouperrs_stacked, axis=1)
-                        trajectories.append((xs, ys))
+                        #agg_grouperrs_stacked = np.column_stack(agg_grouperrs)
+                        #xs = agg_poperrs
+                        #ys = np.max(agg_grouperrs_stacked, axis=1)
+                        #trajectories.append((xs, ys))
 
                         # NOTE: bonus plots are "stacked" bonus plots (i.e. we stack all subgroups across grouptypes)
-                        bonus_plot_list.append(bonus_plots)
+                        #bonus_plot_list.append(bonus_plots)
 
-                        if test_size > 0.0:
-                            val_max_grp_errs.append(val_grp_err)
-                            val_pop_errs.append(val_agg_poperrs[-1])
-
-                            val_agg_grouperrs_stacked = np.column_stack(val_agg_grouperrs)
-                            val_x = val_agg_poperrs
-                            val_y = np.max(val_agg_grouperrs_stacked, axis=1)
-                            val_trajectories.append((val_x, val_y))
-                            val_bonus_plot_list.append(val_bonus_plots)
+                        #Update this for strat class
+                        #if test_size > 0.0:
+                        #    val_max_grp_errs.append(val_grp_err)
+                        #    val_pop_errs.append(val_agg_poperrs[-1])
+                        #    val_agg_grouperrs_stacked = np.column_stack(val_agg_grouperrs)
+                        #    val_x = val_agg_poperrs
+                        #    val_y = np.max(val_agg_grouperrs_stacked, axis=1)
+                        #    val_trajectories.append((val_x, val_y))
+                        #    val_bonus_plot_list.append(val_bonus_plots)
 
                     # End of relaxed simulations over all gammas
-
-                    # Plot the results and save as necessary
-                    if test_size > 0.0:
-                        do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories,
-                                       total_steps, error_type, pop_err_type,
-                                       save_plots, dirname,
-                                       model_type,
-                                       use_input_commands,
-                                       data_name=data_name, bonus_plot_list=bonus_plot_list, show_basic_plots=use_basic_plots,
-                                       val_max_grp_errs=val_max_grp_errs, val_pop_errs=val_pop_errs,
-                                       val_trajectories=val_trajectories, val_bonus_plot_list=val_bonus_plot_list,
-                                       test_size=test_size)
-                    else:
-                        do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories,
-                                       total_steps, error_type, pop_err_type,
-                                       save_plots, dirname,
-                                       model_type,
-                                       use_input_commands,
-                                       data_name=data_name, bonus_plot_list=bonus_plot_list,
-                                       show_basic_plots=use_basic_plots)
 
                 # Write parameters to file
                 params_list = [f'model_index = {model_index}', f'error_type = {error_type}', f'numsteps = {numsteps}', f'a = {a}',
@@ -523,6 +516,16 @@ if __name__ == '__main__':
                                         f'num_uniform_features = {num_uniform_features}'])
 
                 write_params_to_os(outer_directory, params_list)
-    plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
+    if not use_multiple_gammas:
+        plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
                         val_max_error, val_avg_error, tau, display_plots=False)
+    else:
+        do_pareto_plot(gammas, max_error, avg_error,
+                   error_type, pop_err_type,
+                   save_plots, dirname,
+                   model_type,
+                   use_input_commands,
+                   data_name=data_name, show_basic_plots=use_basic_plots,
+                   val_max_grp_errs=val_max_error, val_pop_errs=val_avg_error,
+                   test_size=test_size)
 

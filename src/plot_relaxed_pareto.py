@@ -9,12 +9,12 @@ from src.plotting import save_plots_to_os
 from src.hull_to_pareto import determine_pareto_curve
 
 
-def do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajectories, numsteps,
+def do_pareto_plot(gammas, max_grp_errs, pop_errs,
                    error_type, pop_error_type,
                    save_plots, dirname,
                    model_type,
                    use_input_commands,
-                   data_name='', bonus_plot_list=None, show_basic_plots=False,
+                   data_name='', show_basic_plots=False,
                    val_max_grp_errs=None, val_pop_errs=None, val_trajectories=None, val_bonus_plot_list=None,
                    test_size=0.0):
     """
@@ -30,7 +30,6 @@ def do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajec
 
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
-
     # Get the pareto curve
     pareto = get_pareto(pop_errs, max_grp_errs)
 
@@ -39,7 +38,7 @@ def do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajec
     if pop_error_type == 'Total':
         pop_error_string = f'0/1 Loss'
 
-    if show_basic_plots:
+    if True:
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
@@ -70,37 +69,7 @@ def do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajec
         plt.ylabel(f'Pop Error ({pop_error_string})')
         plt.show()
 
-    # Multi-trajectory plot
-    if use_input_commands:
-        input('Next plot...')
-    figures.append(plt.figure())
-    colors = [np.arange(1, total_steps) for total_steps in total_steps_per_gamma]
-    for (x, y), gamma, color in zip(trajectories, gammas, colors):
-        plt.scatter(x, y, c=color, s=2)
-        plt.scatter(x[0], y[0], c='m', s=20)
-        plt.annotate(f'gamma={gamma:.5f}', xy=(x[-1], y[-1]))
-    plt.title(f'Trajectories over {numsteps} Rounds{dataset_string}  \n {model_type}')
-    plt.xlabel(f'Pop Error ({pop_error_string})')
-    plt.ylabel(f'Max Group Error ({error_type})')
-    # Add the pareto plot here as well
-    if pareto is not None:
-        plt.plot(pareto[:, 0], pareto[:, 1], 'r--', lw=2, label='Pareto Curve', alpha=0.5)
-    plt.show()
-
-    if show_basic_plots:
-        figure_names = ['PopError_vs_MaxGroupError', 'Gamma_vs_MaxGroupError', 'Gamma_vs_PopError',
-                        'Trajectories_over_Gammas']
-    else:
-        figure_names = ['Trajectories_over_Gamma']
-
-    # Do the multi-trajectory plots for the additional error types
-    colors = [np.arange(1, total_steps) for total_steps in total_steps_per_gamma]
-    bonus_figures, bonus_names = \
-        plot_trajectories_from_bonus_plot_data(bonus_plot_list, gammas, model_type, error_type, numsteps,
-                                               total_steps_per_gamma,
-                                               use_input_commands)
-    figures.extend(bonus_figures)
-    figure_names.extend(bonus_names)
+    figure_names = ['PopError_vs_MaxGroupError', 'Gamma_vs_MaxGroupError', 'Gamma_vs_PopError']
 
     if val_max_grp_errs is not None and val_pop_errs is not None:
 
@@ -139,36 +108,6 @@ def do_pareto_plot(gammas, total_steps_per_gamma, max_grp_errs, pop_errs, trajec
             plt.xlabel('Gamma')
             plt.ylabel(f'Pop Error ({pop_error_string})')
             plt.show()
-
-        # Validation Trajectory
-        if use_input_commands:
-            input('Next plot...')
-        figures.append(plt.figure())
-        colors = [np.arange(1, total_steps) for total_steps in total_steps_per_gamma]
-        for (x, y), gamma, color in zip(val_trajectories, gammas, colors):
-            plt.scatter(x, y, c=color, s=2)
-            plt.annotate(f'gamma={gamma:.5f}', xy=(x[-1], y[-1]))
-        plt.title(f'Trajectories over {numsteps} Rounds{dataset_string}  (Validation: {test_size}) \n {model_type}')
-        plt.xlabel(f'Pop Error ({pop_error_string})')
-        plt.ylabel(f'Max Group Error ({error_type})')
-        if val_pareto is not None:
-            plt.plot(val_pareto[:, 0], val_pareto[:, 1], 'r--', lw=2, label='Pareto Curve', alpha=0.5)
-        plt.show()
-
-        if show_basic_plots:
-            figure_names.extend(['PopError_vs_MaxGroupError_Validation', 'Gamma_vs_MaxGroupError_Validation',
-                                 'Gamma_vs_PopError_Validation', 'Trajectories_over_Gammas_Validation'])
-        else:
-            figure_names.extend(['Trajectories_over_Gamma_Validation'])
-
-        # colors = [np.arange(1, total_steps) for total_steps in total_steps_per_gamma]
-        val_bonus_figures, val_bonus_names = \
-            plot_trajectories_from_bonus_plot_data(val_bonus_plot_list, gammas, model_type, error_type,
-                                                   numsteps, total_steps_per_gamma, use_input_commands,
-                                                   test_size=test_size)
-        figures.extend(val_bonus_figures)
-        val_bonus_names = [name + '_Validation' for name in val_bonus_names]
-        figure_names.extend(val_bonus_names)
 
     if use_input_commands:
         input('Quit')
