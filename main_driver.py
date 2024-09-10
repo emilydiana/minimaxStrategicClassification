@@ -26,7 +26,7 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
 tau_min = 0
 tau_max = 12
 tau_step = 0.5
-#scale = 1
+scale = 1
 num_rounds = 8 
 decimal_size = 1
 
