@@ -25,7 +25,7 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_agent = alg_spec[1]       
 tau_min = 0
 tau_max = 1
-tau_step = 0.5
+tau_step = 1 
 num_rounds = 2 
 decimal_size = 1
 

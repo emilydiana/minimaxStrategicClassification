@@ -30,6 +30,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
 
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
+    breakpoint()
     # Get the pareto curve
     pareto = get_pareto(pop_errs, max_grp_errs)
 
