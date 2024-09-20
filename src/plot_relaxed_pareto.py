@@ -27,92 +27,75 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
 
     figures = []
     plt.ion()
+    figure_names = []
 
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
-    breakpoint()
-    # Get the pareto curve
-    pareto = get_pareto(pop_errs, max_grp_errs)
+    learner_types = ['NN-F', '' , 'NN-A', '' , '' , 'SS-F']
+    for lam in range(len(pop_errs[0])):
+        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(lam))
+        paretos = []
+        loc_pop_errs = []
+        loc_max_grp_errs = []
+        for learner in [0, 2, 5]:
+        # Get the pareto curve
+            loc_pop_errs.append([])
+            loc_max_grp_errs.append([])
+            paretos.append([])
+            for t in range(len(max_grp_errs)):
+                for indx in range(len(max_grp_errs[t][lam][learner])):
+                    loc_pop_errs[-1].append(pop_errs[t][lam][learner][indx])
+                    loc_max_grp_errs[-1].append(max_grp_errs[t][lam][learner][indx])
+            paretos[-1].append(get_pareto(loc_pop_errs[-1], loc_max_grp_errs[-1]))
+   
+        # Set pop_error string
+        pop_error_string = pop_error_type
+        if pop_error_type == 'Total':
+            pop_error_string = f'0/1 Loss'
 
-    # Set pop_error string
-    pop_error_string = pop_error_type
-    if pop_error_type == 'Total':
-        pop_error_string = f'0/1 Loss'
-
-    if True:
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.scatter(pop_errs, max_grp_errs)
-        plt.title(f'Pop Error vs. Max Group Error{dataset_string} \n {model_type}')
+        plt.title(f'Tau {lam} Pop Error vs. Max Group Error{dataset_string} \n {model_type}')
         plt.xlabel(f'Pop Error ({pop_error_string})')
         plt.ylabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
-        if pareto is not None:
-            plt.plot(pareto[:, 0], pareto[:, 1], 'r--', lw=2, label='Pareto Curve', alpha=0.5)
+        for num, learner in enumerate([0,2,5]):
+            plt.scatter(loc_pop_errs[num],loc_max_grp_errs[num], label=learner_types[learner])
+            if paretos[num] is not None:
+                plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
+        plt.legend(loc='upper right')
         plt.show()
-
+    
+    for lam in range(len(val_pop_errs[0])):
+        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(lam))
+        val_paretos = []
+        val_loc_pop_errs = []
+        val_loc_max_grp_errs = []
+        for learner in [0, 2, 5]:
+        # Get the pareto curve
+            val_loc_pop_errs.append([])
+            val_loc_max_grp_errs.append([])
+            val_paretos.append([])
+            for t in range(len(val_max_grp_errs)):
+                for indx in range(len(val_max_grp_errs[t][lam][learner])):
+                    val_loc_pop_errs[-1].append(val_pop_errs[t][lam][learner][indx])
+                    val_loc_max_grp_errs[-1].append(val_max_grp_errs[t][lam][learner][indx])
+            val_paretos[-1].append(get_pareto(val_loc_pop_errs[-1], val_loc_max_grp_errs[-1]))
+   
         if use_input_commands:
-            input('Next plot...')
+            input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.scatter(gammas, max_grp_errs)
-        plt.title(f'Gamma vs. Max Group Error{dataset_string}   \n {model_type}')
-        plt.xlabel('Gamma')
+        plt.title(f'Validation Tau {lam} Pop Error vs. Max Group Error{dataset_string} \n {model_type}')
+        plt.xlabel(f'Pop Error ({pop_error_string})')
         plt.ylabel(f'Max Group Error ({error_type})')
+        # Compute and plot pareto curve
+        for num, learner in enumerate([0,2,5]):
+            plt.scatter(val_loc_pop_errs[num],val_loc_max_grp_errs[num], label=learner_types[learner])
+            if val_paretos[num] is not None:
+                plt.plot(val_paretos[num][0][:, 0], val_paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
+        plt.legend(loc='upper right')
         plt.show()
-
-        if use_input_commands:
-            input('Next plot...')
-        figures.append(plt.figure())
-        plt.scatter(gammas, pop_errs)
-        plt.title(f'Gamma vs. Pop Error{dataset_string}   \n {model_type}')
-        plt.xlabel('Gamma')
-        plt.ylabel(f'Pop Error ({pop_error_string})')
-        plt.show()
-
-    figure_names = ['PopError_vs_MaxGroupError', 'Gamma_vs_MaxGroupError', 'Gamma_vs_PopError']
-
-    if val_max_grp_errs is not None and val_pop_errs is not None:
-
-        val_pareto = get_pareto(val_pop_errs, val_max_grp_errs)
-
-        if show_basic_plots:
-            # Validation Pop Error vs. Max Group Error
-            if use_input_commands:
-                input('Click enter to display first validation plot')
-            figures.append(plt.figure())
-            plt.scatter(val_pop_errs, val_max_grp_errs)
-            plt.title(f'Pop Error vs. Max Group Error{dataset_string} (Validation: {test_size}) \n {model_type}')
-            plt.xlabel(f'Pop Error ({pop_error_string})')
-            plt.ylabel(f'Max Group Error ({error_type})')
-            # Compute and plot pareto curve
-            if val_pareto is not None:
-                plt.plot(val_pareto[:, 0], val_pareto[:, 1], 'r--', lw=2, label='Pareto Curve', alpha=0.5)
-            plt.show()
-
-            # Validation Gamma vs. Max Group Error
-            if use_input_commands:
-                input('Next plot...')
-            figures.append(plt.figure())
-            plt.scatter(gammas, val_max_grp_errs)
-            plt.title(f'Gamma vs. Max Group Error{dataset_string} (Validation: {test_size}) \n {model_type}')
-            plt.xlabel('Gamma')
-            plt.ylabel(f'Max Group Error ({error_type})')
-            plt.show()
-
-            # Validation Gamma vs. Pop Error
-            if use_input_commands:
-                input('Next plot...')
-            figures.append(plt.figure())
-            plt.scatter(gammas, val_pop_errs)
-            plt.title(f'Gamma vs. Pop Error{dataset_string} (Validation: {test_size}) \n {model_type}')
-            plt.xlabel('Gamma')
-            plt.ylabel(f'Pop Error ({pop_error_string})')
-            plt.show()
-
-    if use_input_commands:
-        input('Quit')
-
     if save_plots:
         save_plots_to_os(figures, figure_names, dirname, True)
         plt.close('all')

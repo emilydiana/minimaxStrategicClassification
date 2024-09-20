@@ -24,8 +24,6 @@ def create_validation_split(X, y, tau_vector, grouplabels, test_size, random_see
 
     num_group_types = grouplabels.shape[0]
         
-    print(num_group_types)
-    
     # Default, single groups type case
     if num_group_types == 1:
         grouplabels = grouplabels[0]

@@ -23,10 +23,10 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-tau_min = 0
-tau_max = 1
+tau_min = 2
+tau_max = 12
 tau_step = 1 
-num_rounds = 2 
+num_rounds = 10 
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -59,7 +59,7 @@ convergence_threshold = 1e-12  # Converge early if max change in sampleweights b
 
 # Relaxed Model Settings
 use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
-num_gammas = 2  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
+num_gammas = 3  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
 gamma = 0.0  # Max groups error if using relaxed variant
@@ -107,7 +107,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 1  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 8  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -443,7 +443,7 @@ if __name__ == '__main__':
                     avg_error[t][tau][curr_index]=[]
                     val_max_error[t][tau][curr_index]=[]
                     val_avg_error[t][tau][curr_index]=[]
-
+                    #max_err = 0.5 
                     increment = (max_err - minimax_err) / num_gammas  # NOTE: `max_err` is defined over all subgroups
                     if increment == 0:
                         assert max_err == minimax_err  # this should be the only way increment is 0
@@ -555,6 +555,7 @@ if __name__ == '__main__':
                    data_name=data_name, show_basic_plots=use_basic_plots,
                    val_max_grp_errs=val_max_error, val_pop_errs=val_avg_error,
                    test_size=test_size)
-    plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
+    else:
+        plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
                        val_max_error, val_avg_error, tau, display_plots=False)
 

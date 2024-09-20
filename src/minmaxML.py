@@ -324,7 +324,6 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         if t > 3 and max(abs(avg_sampleweights - prev_avg_sampleweights)) < convergence_threshold:
             total_steps = t
             print(f'Converging early at round {total_steps}')
-            print(max(abs(avg_sampleweights - prev_avg_sampleweights)))
             break
 
         if t % max(1, (numsteps // 50)) == 0 and verbose:
