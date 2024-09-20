@@ -350,7 +350,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
             
             if strategic_learner[0]: 
                 temp_errors = np.zeros((numsteps, numsamples))
-                learner_tau_values = [tau * (learner_tau_min_frac + i * learner_tau_step) for i in range(int((learner_tau_max_frac - learner_tau_min_frac) / learner_tau_step) + 1)]
+                #learner_tau_values = [tau * (learner_tau_min_frac + i * learner_tau_step) for i in range(int((learner_tau_max_frac - learner_tau_min_frac) / learner_tau_step) + 1)]
+                learner_tau_values = [tau * (i * learner_tau_step) for i in range(int(learner_tau_max_frac / learner_tau_step) + 1)]
                 best_max_err = float('inf')
                 best_learner_tau = learner_tau_min_frac * tau
                 
