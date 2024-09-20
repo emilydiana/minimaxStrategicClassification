@@ -14,6 +14,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
                    save_plots, dirname,
                    model_type,
                    use_input_commands,
+                   tau_list, tau_group_values,
                    data_name='', show_basic_plots=False,
                    val_max_grp_errs=None, val_pop_errs=None, val_trajectories=None, val_bonus_plot_list=None,
                    test_size=0.0):
@@ -24,7 +25,6 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
     Use argument `show_basic_plots` to enable scatter plots for pairwise relationships between population error,
     max groups error, and gamma, of the final mixture models.
     """
-
     figures = []
     plt.ion()
     figure_names = []
@@ -32,8 +32,8 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
     learner_types = ['NN-F', '' , 'NN-A', '' , '' , 'SS-F']
-    for lam in range(len(pop_errs[0])):
-        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(lam))
+    for lam, tau in enumerate(tau_list):
+        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau))
         paretos = []
         loc_pop_errs = []
         loc_max_grp_errs = []
@@ -43,9 +43,9 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
             loc_max_grp_errs.append([])
             paretos.append([])
             for t in range(len(max_grp_errs)):
-                for indx in range(len(max_grp_errs[t][lam][learner])):
-                    loc_pop_errs[-1].append(pop_errs[t][lam][learner][indx])
-                    loc_max_grp_errs[-1].append(max_grp_errs[t][lam][learner][indx])
+                for indx in range(len(max_grp_errs[t][tau][learner])):
+                    loc_pop_errs[-1].append(pop_errs[t][tau][learner][indx])
+                    loc_max_grp_errs[-1].append(max_grp_errs[t][tau][learner][indx])
             paretos[-1].append(get_pareto(loc_pop_errs[-1], loc_max_grp_errs[-1]))
    
         # Set pop_error string
@@ -56,19 +56,20 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.title(f'Tau {lam} Pop Error vs. Max Group Error{dataset_string} \n {model_type}')
+        plt.title(f'Tau {tau} Pop Error vs. Max Group Error{dataset_string} \n {model_type} with group ratios {tau_group_values}')
         plt.xlabel(f'Pop Error ({pop_error_string})')
         plt.ylabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
         for num, learner in enumerate([0,2,5]):
             plt.scatter(loc_pop_errs[num],loc_max_grp_errs[num], label=learner_types[learner])
             if paretos[num] is not None:
-                plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
+                if paretos[num][0] is not None:
+                    plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
         plt.legend(loc='upper right')
         plt.show()
     
-    for lam in range(len(val_pop_errs[0])):
-        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(lam))
+    for lam, tau in enumerate(tau_list):
+        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(tau))
         val_paretos = []
         val_loc_pop_errs = []
         val_loc_max_grp_errs = []
@@ -78,21 +79,21 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
             val_loc_max_grp_errs.append([])
             val_paretos.append([])
             for t in range(len(val_max_grp_errs)):
-                for indx in range(len(val_max_grp_errs[t][lam][learner])):
-                    val_loc_pop_errs[-1].append(val_pop_errs[t][lam][learner][indx])
-                    val_loc_max_grp_errs[-1].append(val_max_grp_errs[t][lam][learner][indx])
+                for indx in range(len(val_max_grp_errs[t][tau][learner])):
+                    val_loc_pop_errs[-1].append(val_pop_errs[t][tau][learner][indx])
+                    val_loc_max_grp_errs[-1].append(val_max_grp_errs[t][tau][learner][indx])
             val_paretos[-1].append(get_pareto(val_loc_pop_errs[-1], val_loc_max_grp_errs[-1]))
    
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.title(f'Validation Tau {lam} Pop Error vs. Max Group Error{dataset_string} \n {model_type}')
+        plt.title(f'Validation Tau {tau} Pop Error vs. Max Group Error{dataset_string} \n {model_type} with group ratios {tau_group_values}')
         plt.xlabel(f'Pop Error ({pop_error_string})')
         plt.ylabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
         for num, learner in enumerate([0,2,5]):
             plt.scatter(val_loc_pop_errs[num],val_loc_max_grp_errs[num], label=learner_types[learner])
-            if val_paretos[num] is not None:
+            if val_paretos[num] is not None and val_paretos[num][0] is not None:
                 plt.plot(val_paretos[num][0][:, 0], val_paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
         plt.legend(loc='upper right')
         plt.show()

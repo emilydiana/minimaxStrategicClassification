@@ -23,10 +23,12 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-tau_min = 2
-tau_max = 12
+tau_min = 1
+tau_max = 1
 tau_step = 1 
-num_rounds = 10 
+tau_group_values = None
+#tau_group_values = [0.1, 1,0.75,0.1]
+num_rounds = 1
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -107,7 +109,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 8  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 4  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -234,8 +236,10 @@ if __name__ == '__main__':
     tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
     # tau_group_values indicate the fraction of tau values each group is using. 
     # group i budget is tau_group_values[i] * tau
-    tau_group_values = np.ones(np.array(group_names).flatten().shape, dtype=float)
-    
+    if tau_group_values is None:
+        tau_group_values = np.ones(np.array(group_names).flatten().shape, dtype=float)
+    else:
+        tau_group_values = np.array(tau_group_values)
     avg_error = []
     max_error = []
     val_avg_error = []
@@ -269,7 +273,7 @@ if __name__ == '__main__':
             solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
             model_tag = model_name_shortener.get(model_type, model_type)
             dirname = f'{outer_directory}/{model_tag}_val={test_size}_tau={round(tau,decimal_size)}{error_tag}{equal_error_tag}'
-        
+            dirname = f'{outer_directory}'
             for alg_spec in [[False, False, False], [True, True, False], [False, False, True]]:
                 # Assign values from alg_spec to strategic_learner and strategic_agent
                 strategic_learner[0] = alg_spec[0]  # Is learner strategic in training?
@@ -551,7 +555,7 @@ if __name__ == '__main__':
                    error_type, pop_err_type,
                    save_plots, dirname,
                    model_type,
-                   use_input_commands,
+                   use_input_commands, tau_list, tau_group_values,
                    data_name=data_name, show_basic_plots=use_basic_plots,
                    val_max_grp_errs=val_max_error, val_pop_errs=val_avg_error,
                    test_size=test_size)
