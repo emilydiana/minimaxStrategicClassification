@@ -20,7 +20,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     # Create a list of all figures we want to save for later which will be passed into a function
 
     figures = []
-    str_algs= ['Non-Strategic', '' , 'na\u00EFve Strategic', '' , '' , 'Ours']
+    str_algs= ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
     alg_name = f'{str_algs[curr_idx]}'
     figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
                     f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
@@ -171,14 +171,14 @@ def write_error_array(avg_error, max_error, max_error_array, avg_error_array, ta
         for idx, tau in enumerate(tau_values):
             file.write(f'tau = {tau} and for {val}max-error:\n') 
             file.write(f'\t Non-Strategic = {max_error[tau][0]}\n') 
-            file.write(f'\t na\u00EFve Strategic = {max_error[tau][2]}\n') 
+            file.write(f'\t Na\u00EFve Strategic = {max_error[tau][2]}\n') 
 #            file.write(f'\t NS-F = {max_error[tau][1]}\n') 
 #            file.write(f'\t NS-A = {max_error[tau][3]}\n') 
             file.write(f'\t Ours = {max_error[tau][5]}\n') 
 
             file.write(f'tau = {tau} and for {val}avg-error:\n') 
             file.write(f'\t Non-Strategic = {avg_error[tau][0]}\n') 
-            file.write(f'\t na\u00EFve Strategic = {avg_error[tau][2]}\n') 
+            file.write(f'\t Na\u00EFve Strategic = {avg_error[tau][2]}\n') 
 #            file.write(f'\t NS-F = {avg_error[tau][1]}\n') 
 #            file.write(f'\t NS-A = {avg_error[tau][3]}\n') 
             file.write(f'\t Ours = {avg_error[tau][5]}\n') 
@@ -259,7 +259,7 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     plt.ion()
     # Average Pop error vs. Rounds
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
-    learner_types = ['Non-Strategic', '' , 'na\u00EFve Strategic', '' , '' , 'Ours']
+    learner_types = ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
     for learner in [0, 2, 5]:
         tau_x_ticks = np.arange(0, len(mean_max_error_array[:, learner]))
         # Plots the groups with appropriate label
