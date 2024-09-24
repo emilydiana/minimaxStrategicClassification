@@ -109,7 +109,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 4  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 11  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -238,6 +238,11 @@ if __name__ == '__main__':
     # group i budget is tau_group_values[i] * tau
     if tau_group_values is None:
         tau_group_values = np.ones(np.array(group_names).flatten().shape, dtype=float)
+        #Manually set the fraction of group budgets.
+        #tau_group_values[3] = 1
+        #tau_group_values[2] = 1
+        tau_group_values[1] = 1
+        tau_group_values[0] = 1
     else:
         tau_group_values = np.array(tau_group_values)
     avg_error = []
@@ -267,7 +272,7 @@ if __name__ == '__main__':
             learner_tau_max_frac = np.max(tau_group_values)    
 
             dataname_extension = data_name if not new_synthetic else f'seed={random_data_seed}'
-            outer_directory = f'experiments/{dataname_extension}'
+            outer_directory = f'experiments/{dataname_extension}_({tau_group_values})'
             error_tag = '_' + (error_type if error_type != '0/1 Loss' else '0-1 Loss')
             equal_error_tag = '_equal-error' if equal_error else ''
             solver_tag = f'_{logistic_solver}' if model_type == 'LogisticRegression' else ''
@@ -537,7 +542,8 @@ if __name__ == '__main__':
                                f'use_multiple_gammas = {use_multiple_gammas}', f'num_gammas = {num_gammas}', f'relaxed = {relaxed}',
                                f'gamma = {gamma if relaxed else 0.0}',
                                f'data_index = {data_index}', f'drop_group_as_feature = {drop_group_as_feature}',
-                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}']
+                               f'tau_min = {tau_min}', f'tau_max = {tau_max}', f'tau_step = {tau_step}',
+                               f'tau_group_values = {tau_group_values}']
 
                 synethetic_list = []
                 if use_preconfigured_dataset and data_index == 0 and not read_from_file:
