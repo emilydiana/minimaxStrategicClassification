@@ -23,12 +23,12 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-tau_min = 1
-tau_max = 1
+tau_min = 3
+tau_max = 3
 tau_step = 1 
-tau_group_values = None
-#tau_group_values = [0.1, 1,0.75,0.1]
-num_rounds = 1
+#tau_group_values = None
+tau_group_values = [1, 0.5]
+num_rounds = 3
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -452,7 +452,7 @@ if __name__ == '__main__':
                     avg_error[t][tau][curr_index]=[]
                     val_max_error[t][tau][curr_index]=[]
                     val_avg_error[t][tau][curr_index]=[]
-                    #max_err = 0.5 
+                    max_err = 0.5 
                     increment = (max_err - minimax_err) / num_gammas  # NOTE: `max_err` is defined over all subgroups
                     if increment == 0:
                         assert max_err == minimax_err  # this should be the only way increment is 0
@@ -461,7 +461,7 @@ if __name__ == '__main__':
                         gamma_list = [minimax_err]
 
                     else:
-                        gamma_list = np.arange(minimax_err, max_err + increment, increment)
+                        gamma_list = np.arange(minimax_err, max_err + 1.5*increment, increment)
 
                     # If we are using equal error, then we only care about minimax s.t. all errors below that
                     if equal_error:
@@ -470,9 +470,9 @@ if __name__ == '__main__':
                     # Perform one iteration for each value of gamma
                     for gamma in gamma_list:
                         # Skip gammas that are unnecessarily loose as a result of rounding while including endpoint
-                        if gamma > max_err and len(gamma_list) > 1:
-                            print(f'Skipping overly loose gamma value: {gamma}')
-                            continue
+                        #if gamma > max_err and len(gamma_list) > 1:
+                        #    print(f'Skipping overly loose gamma value: {gamma}')
+                        #    continue
                         print(f'Starting relaxed learning with gamma = {gamma}...')
                         (max_grp_err, _, _, agg_grouperrs, agg_poperrs, bonus_plots, pop_err_type, total_steps, _,
                          val_grp_err, val_pop_err, val_agg_grouperrs, val_agg_poperrs, val_bonus_plots) = \
