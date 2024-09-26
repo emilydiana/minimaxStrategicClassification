@@ -52,17 +52,24 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
                 loc_max_grp_errs[-1].append(max_grp_errs[t][tau][learner])
             loc_av_pop_errs = np.mean(loc_pop_errs[-1],axis=0)
             loc_pop_conf = 1.96*np.std(loc_pop_errs[-1],axis=0)/np.sqrt(trials)
-            loc_pop_upper = loc_av_pop_errs + loc_pop_conf
-            loc_pop_lower = loc_av_pop_errs - loc_pop_conf
+            #loc_pop_upper = loc_av_pop_errs + loc_pop_conf
+            #loc_pop_lower = loc_av_pop_errs - loc_pop_conf
  
             loc_av_max_grp_errs = np.mean(loc_max_grp_errs[-1],axis=0)
-            loc_max_conf = 1.96*np.std(loc_max_grp_errs[-1],axis=0)/np.sqrt(trials)
-            loc_max_upper = loc_av_max_grp_errs + loc_max_conf
-            loc_max_lower = loc_av_max_grp_errs - loc_max_conf
+            #loc_max_conf = 1.96*np.std(loc_max_grp_errs[-1],axis=0)/np.sqrt(trials)
+            #loc_max_upper = loc_av_max_grp_errs + loc_max_conf
+            #loc_max_lower = loc_av_max_grp_errs - loc_max_conf
  
             paretos[-1].append(get_pareto(loc_av_pop_errs, loc_av_max_grp_errs))
-            paretos_upper[-1].append(get_pareto(loc_pop_upper,loc_max_upper))
-            paretos_lower[-1].append(get_pareto(loc_pop_lower, loc_max_lower))
+            p_upper = []
+            p_lower = []
+            if paretos[-1][0] is not None:
+                for i in range(len(paretos[-1][0])):
+                    curr_index = np.where((loc_av_pop_errs == paretos[-1][0][i,0]) & (loc_av_max_grp_errs == paretos[-1][0][i,1]))[0][0]
+                    p_upper.append(paretos[-1][0][i,0] + loc_pop_conf[curr_index])
+                    p_lower.append(paretos[-1][0][i,0] - loc_pop_conf[curr_index])
+                paretos_upper[-1].append(p_upper)
+                paretos_lower[-1].append(p_lower)
         # Set pop_error string
         pop_error_string = pop_error_type
         if pop_error_type == 'Total':
@@ -80,7 +87,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
             if paretos[num] is not None:
                 if paretos[num][0] is not None:
                     plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
-                    plt.fill_between(paretos[num][0][:,0],paretos_upper[num][0][:,1],paretos_lower[num][0][:,1],alpha=0.1)
+                    plt.fill_betweenx(paretos[num][0][:,1],paretos_upper[num][0],paretos_lower[num][0],alpha=0.1)
         plt.legend(loc='upper right')
         plt.show()
     
@@ -103,16 +110,26 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
                 val_loc_max_grp_errs[-1].append(val_max_grp_errs[t][tau][learner])
             val_loc_av_pop_errs = np.mean(val_loc_pop_errs[-1],axis=0)
             val_loc_pop_conf = 1.96*np.std(val_loc_pop_errs[-1],axis=0)/np.sqrt(trials)
-            val_loc_pop_upper = val_loc_av_pop_errs + val_loc_pop_conf
-            val_loc_pop_lower = val_loc_av_pop_errs - val_loc_pop_conf
+            #val_loc_pop_upper = val_loc_av_pop_errs + val_loc_pop_conf
+            #val_loc_pop_lower = val_loc_av_pop_errs - val_loc_pop_conf
  
             val_loc_av_max_grp_errs = np.mean(val_loc_max_grp_errs[-1],axis=0)
-            val_loc_max_conf = 1.96*np.std(val_loc_max_grp_errs[-1],axis=0)/np.sqrt(trials)
-            val_loc_max_upper = val_loc_av_max_grp_errs + val_loc_max_conf
-            val_loc_max_lower = val_loc_av_max_grp_errs - val_loc_max_conf
-            val_paretos[-1].append(get_pareto(val_loc_av_pop_errs, val_loc_av_max_grp_errs[-1]))
-            val_paretos_upper[-1].append(get_pareto(val_loc_pop_upper, val_loc_max_upper))
-            val_paretos_lower[-1].append(get_pareto(val_loc_pop_lower, val_loc_max_lower))
+            #val_loc_max_conf = 1.96*np.std(val_loc_max_grp_errs[-1],axis=0)/np.sqrt(trials)
+            #val_loc_max_upper = val_loc_av_max_grp_errs + val_loc_max_conf
+            #val_loc_max_lower = val_loc_av_max_grp_errs - val_loc_max_conf
+            val_paretos[-1].append(get_pareto(val_loc_av_pop_errs, val_loc_av_max_grp_errs))
+            val_p_upper = []
+            val_p_lower = []
+            if val_paretos[-1][0] is not None:
+                for i in range(len(val_paretos[-1][0])):
+                    curr_index = np.where((val_loc_av_pop_errs == val_paretos[-1][0][i,0]) & (val_loc_av_max_grp_errs == val_paretos[-1][0][i,1]))[0][0]
+                    val_p_upper.append(val_paretos[-1][0][i,0] + val_loc_pop_conf[curr_index])
+                    val_p_lower.append(val_paretos[-1][0][i,0] - val_loc_pop_conf[curr_index])
+                val_paretos_upper[-1].append(val_p_upper)
+                val_paretos_lower[-1].append(val_p_lower)
+            
+            #val_paretos_upper[-1].append(get_pareto(val_loc_pop_upper, val_loc_av_max_grp_errs))
+            #val_paretos_lower[-1].append(get_pareto(val_loc_pop_lower, val_loc_av_max_grp_errs))
    
         if use_input_commands:
             input('Press `Enter` to display first plot...')
@@ -125,7 +142,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
             plt.scatter(val_loc_pop_errs[num],val_loc_max_grp_errs[num], label=learner_types[learner])
             if val_paretos[num] is not None and val_paretos[num][0] is not None:
                 plt.plot(val_paretos[num][0][:, 0], val_paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
-                plt.fill_between(val_paretos[num][0][:,0],val_paretos_upper[num][0][:,1],val_paretos_lower[num][0][:,1],alpha=0.1)
+                plt.fill_betweenx(val_paretos[num][0][:,1],val_paretos_upper[num][0],val_paretos_lower[num][0],alpha=0.1)
         plt.legend(loc='upper right')
         plt.show()
     if save_plots:

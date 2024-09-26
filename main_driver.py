@@ -28,7 +28,7 @@ tau_max = 3
 tau_step = 1 
 #tau_group_values = None
 tau_group_values = [1, 0.5]
-num_rounds = 3
+num_rounds = 8 
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -61,7 +61,7 @@ convergence_threshold = 1e-12  # Converge early if max change in sampleweights b
 
 # Relaxed Model Settings
 use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
-num_gammas = 3  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
+num_gammas = 18 # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
 gamma = 0.0  # Max groups error if using relaxed variant
