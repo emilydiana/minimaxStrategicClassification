@@ -35,7 +35,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
     colors = ['b', '','orange','','','g']
     trials = len(max_grp_errs)
     for lam, tau in enumerate(tau_list):
-        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau))
+        figure_names.append('PopError_vs_MaxGroupError')
         paretos = []
         paretos_upper = []
         paretos_lower = []
@@ -93,7 +93,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         plt.show()
     
     for lam, tau in enumerate(tau_list):
-        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(tau))
+        figure_names.append('Val_PopError_vs_MaxGroupError')
         val_paretos = []
         val_paretos_upper = []
         val_paretos_lower = []
