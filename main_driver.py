@@ -23,11 +23,11 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-tau_min = 3
-tau_max = 3
+tau_min = 1
+tau_max = 1
 tau_step = 1 
 #tau_group_values = None
-tau_group_values = [1, 0.5, 0, 0]
+tau_group_values = [0.25, 0.5, 1, 1]
 num_rounds = 8
 decimal_size = 1
 

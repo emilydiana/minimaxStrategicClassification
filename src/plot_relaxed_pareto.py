@@ -28,14 +28,17 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
     figures = []
     plt.ion()
     figure_names = []
-
+    
+    group_string = ""
+    for elem in tau_group_values:
+        group_string = group_string + "_" + str(elem)
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
     learner_types = ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
     colors = ['b', '','orange','','','g']
     trials = len(max_grp_errs)
     for lam, tau in enumerate(tau_list):
-        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau))
+        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau) + group_string)
         paretos = []
         paretos_upper = []
         paretos_lower = []
@@ -79,7 +82,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.title(f'Tau {tau} Pop Error vs. Max Group Error{dataset_string} \n {model_type} with group ratios {tau_group_values}')
+        plt.title(f'Tau {tau} Pop Error vs. Max Group Error{dataset_string} \n with group ratios {tau_group_values}')
         plt.xlabel(f'Pop Error ({pop_error_string})')
         plt.ylabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
@@ -93,7 +96,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         plt.show()
     
     for lam, tau in enumerate(tau_list):
-        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(tau))
+        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(tau) + group_string)
         val_paretos = []
         val_paretos_upper = []
         val_paretos_lower = []
@@ -135,7 +138,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.title(f'Max Group Error vs. Pop Error{dataset_string} \n {model_type} with Budget {tau} and Group Fractions {tau_group_values}')
+        plt.title(f'Max Group Error vs. Pop Error{dataset_string} \n with Manipulation Budget {tau} and Group Profiles {tau_group_values}')
         plt.ylabel(f'Pop Error ({pop_error_string})')
         plt.xlabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
