@@ -83,10 +83,10 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         plt.ylabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
         for num, learner in enumerate([0,2,5]):
-            plt.scatter(loc_pop_errs[num],loc_max_grp_errs[num], label=learner_types[learner])
             if paretos[num] is not None:
                 if paretos[num][0] is not None:
-                    plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
+                    plt.scatter(paretos[num][0][:,0], paretos[num][0][:,1], label=learner_types[learner], alpha=0.5)
+                    plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1])
                     plt.fill_betweenx(paretos[num][0][:,1],paretos_upper[num][0],paretos_lower[num][0],alpha=0.1)
         plt.legend(loc='upper right')
         plt.show()
@@ -139,9 +139,9 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         plt.ylabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
         for num, learner in enumerate([0,2,5]):
-            plt.scatter(val_loc_pop_errs[num],val_loc_max_grp_errs[num], label=learner_types[learner])
             if val_paretos[num] is not None and val_paretos[num][0] is not None:
-                plt.plot(val_paretos[num][0][:, 0], val_paretos[num][0][:, 1], 'r--', lw=2, label='Pareto Curve: ' + learner_types[learner], alpha=0.5)
+                plt.scatter(val_paretos[num][0][:,0],val_paretos[num][0][:,1], label=learner_types[learner], alpha=0.5)
+                plt.plot(val_paretos[num][0][:, 0], val_paretos[num][0][:, 1])
                 plt.fill_betweenx(val_paretos[num][0][:,1],val_paretos_upper[num][0],val_paretos_lower[num][0],alpha=0.1)
         plt.legend(loc='upper right')
         plt.show()
