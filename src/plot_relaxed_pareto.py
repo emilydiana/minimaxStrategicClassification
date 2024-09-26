@@ -32,6 +32,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
     learner_types = ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
+    colors = ['b', '','orange','','','g']
     trials = len(max_grp_errs)
     for lam, tau in enumerate(tau_list):
         figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau))
@@ -85,10 +86,10 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         for num, learner in enumerate([0,2,5]):
             if paretos[num] is not None:
                 if paretos[num][0] is not None:
-                    plt.scatter(paretos[num][0][:,0], paretos[num][0][:,1], label=learner_types[learner], alpha=0.5)
-                    plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1])
-                    plt.fill_betweenx(paretos[num][0][:,1],paretos_upper[num][0],paretos_lower[num][0],alpha=0.1)
-        plt.legend(loc='upper right')
+                    plt.scatter(paretos[num][0][:,0], paretos[num][0][:,1], label=learner_types[learner], alpha=0.5, color=colors[learner])
+                    plt.plot(paretos[num][0][:, 0], paretos[num][0][:, 1], color=colors[learner])
+                    plt.fill_betweenx(paretos[num][0][:,1],paretos_upper[num][0],paretos_lower[num][0],alpha=0.1,color=colors[learner])
+        plt.legend(loc='lower right')
         plt.show()
     
     for lam, tau in enumerate(tau_list):
@@ -134,16 +135,16 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         if use_input_commands:
             input('Press `Enter` to display first plot...')
         figures.append(plt.figure())
-        plt.title(f'Validation Tau {tau} Pop Error vs. Max Group Error{dataset_string} \n {model_type} with group ratios {tau_group_values}')
-        plt.xlabel(f'Pop Error ({pop_error_string})')
-        plt.ylabel(f'Max Group Error ({error_type})')
+        plt.title(f'Max Group Error vs. Pop Error{dataset_string} \n {model_type} with Budget {tau} and Group Fractions {tau_group_values}')
+        plt.ylabel(f'Pop Error ({pop_error_string})')
+        plt.xlabel(f'Max Group Error ({error_type})')
         # Compute and plot pareto curve
         for num, learner in enumerate([0,2,5]):
             if val_paretos[num] is not None and val_paretos[num][0] is not None:
-                plt.scatter(val_paretos[num][0][:,0],val_paretos[num][0][:,1], label=learner_types[learner], alpha=0.5)
-                plt.plot(val_paretos[num][0][:, 0], val_paretos[num][0][:, 1])
-                plt.fill_betweenx(val_paretos[num][0][:,1],val_paretos_upper[num][0],val_paretos_lower[num][0],alpha=0.1)
-        plt.legend(loc='upper right')
+                plt.scatter(val_paretos[num][0][:,1],val_paretos[num][0][:,0], label=learner_types[learner], alpha=0.5,color=colors[learner])
+                plt.plot(val_paretos[num][0][:, 1], val_paretos[num][0][:, 0], color=colors[learner])
+                plt.fill_between(val_paretos[num][0][:,1],val_paretos_upper[num][0],val_paretos_lower[num][0],alpha=0.1, color=colors[learner])
+        plt.legend(loc='lower right')
         plt.show()
     if save_plots:
         save_plots_to_os(figures, figure_names, dirname, True)

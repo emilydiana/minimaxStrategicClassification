@@ -27,8 +27,8 @@ tau_min = 3
 tau_max = 3
 tau_step = 1 
 #tau_group_values = None
-tau_group_values = [1, 0.5]
-num_rounds = 8 
+tau_group_values = [1, 0.5, 0, 0]
+num_rounds = 8
 decimal_size = 1
 
 #scale: COMAPS =1, Credit = 1, Student = 1e9
@@ -109,7 +109,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 11  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 8  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
