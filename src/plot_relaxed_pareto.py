@@ -29,16 +29,13 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
     plt.ion()
     figure_names = []
     
-    group_string = ""
-    for elem in tau_group_values:
-        group_string = group_string + "_" + str(elem)
     # Setup strings for graph titles
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}' if data_name != '' else ''
     learner_types = ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
     colors = ['b', '','orange','','','g']
     trials = len(max_grp_errs)
     for lam, tau in enumerate(tau_list):
-        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau) + group_string)
+        figure_names.append('PopError_vs_MaxGroupError_Budget_' + str(tau))
         paretos = []
         paretos_upper = []
         paretos_lower = []
@@ -96,7 +93,7 @@ def do_pareto_plot(gammas, max_grp_errs, pop_errs,
         plt.show()
     
     for lam, tau in enumerate(tau_list):
-        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(tau) + group_string)
+        figure_names.append('Val_PopError_vs_MaxGroupError_Budget_' + str(tau))
         val_paretos = []
         val_paretos_upper = []
         val_paretos_lower = []
