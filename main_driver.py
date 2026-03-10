@@ -23,11 +23,11 @@ alg_spec = [False, False, False]    # the first two coordinates are respectively
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-tau_min = 1
-tau_max = 1
+tau_min = 3 
+tau_max = 3
 tau_step = 1 
 #tau_group_values = None
-tau_group_values = [0.25, 0.5, 1, 1]
+tau_group_values = [1, 1, 1, 1]
 num_rounds = 8
 decimal_size = 1
 
@@ -61,7 +61,7 @@ convergence_threshold = 1e-12  # Converge early if max change in sampleweights b
 
 # Relaxed Model Settings
 use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
-num_gammas = 18 # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
+num_gammas = 28 # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run
 gamma = 0.0  # Max groups error if using relaxed variant
@@ -233,7 +233,8 @@ if __name__ == '__main__':
     # Allows us to give shorter names to our folders
     model_name_shortener = {'PairedRegressionClassifier': 'PRC', 'LinearRegression': 'LinReg',
                             'LogisticRegression': 'LogReg', 'LinearSVM': 'SVM'}
-    tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
+    #tau_list = [round(i * tau_step, 1) for i in range(tau_min, tau_max + 1)]
+    tau_list = [tau_min]
     # tau_group_values indicate the fraction of tau values each group is using. 
     # group i budget is tau_group_values[i] * tau
     if tau_group_values is None:
