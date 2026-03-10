@@ -179,13 +179,13 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     # Instatiate all error arrays
     errors = np.zeros((numsteps, numsamples))  # Stores error for each member of pop for each round
     # Instantiate social cost array
-    social_cost = np.zeros((numsteps, numsamples))  # Stores error for each member of pop for each round
+    social_burden = np.zeros((numsteps, numsamples))  # Stores error for each member of pop for each round
     # Store errors for each groups over rounds both for individual model and aggregate mixture
     grouperrs, agg_grouperrs = create_group_error_arrays(num_group_types, numsteps, numgroups)
     group_social_burden, agg_group_social_burden = create_group_error_arrays(num_group_types, numsteps, numgroups)
     if do_validation:
         val_errors = np.zeros((numsteps, val_numsamples))
-        val_social_cost = np.zeros((numsteps, val_numsamples))
+        val_social_burden = np.zeros((numsteps, val_numsamples))
         val_grouperrs, val_agg_grouperrs = create_group_error_arrays(num_group_types, numsteps, numgroups)
         val_group_social_burden, val_agg_group_social_burden = create_group_error_arrays(num_group_types, numsteps, numgroups)
 
@@ -363,7 +363,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                     curr_model = copy.deepcopy(modelhat)
                     shift_model(curr_model, learner_tau)
                     compute_model_errors(curr_model, X_train, y_train, t, temp_errors, error_type, penalty, 
-                    C, strategic_agent, tau_vector_train, social_cost = social_cost)
+                    C, strategic_agent, tau_vector_train, social_burden = social_burden)
                     
                     temp_index = index[0]
                     temp_groupsize = groupsize[0]
@@ -411,7 +411,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
 
         elif model_type in classification_models:
             # Updates errors array with the round-specific errors for each person for round t
-            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau_vector_train, social_cost = social_cost)
+            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau_vector_train, social_burden = social_burden)
             # Compute the errors for all additional error types
             for err_type in extra_error_types:
                 compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C)
@@ -422,7 +422,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 if strategic_learner[1] == True:
                     val_modelhat = shift_model(val_modelhat, learner_tau_mean)
 
-                compute_model_errors(val_modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau_vector_test, social_cost = val_social_cost)
+                compute_model_errors(val_modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau_vector_test, social_burden = val_social_burden)
 
                 for err_type in extra_error_types:
                     compute_model_errors(modelhat, X_test, y_test, t, val_specific_errors[err_type], err_type,
@@ -434,12 +434,12 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         for i in range(num_group_types):
             update_group_errors(numgroups[i], t, errors, grouperrs[i], agg_grouperrs[i], index[i],
                                 groupsize_err_type[i])
-            update_group_social_burden(numgroups[i], t, social_cost, group_social_burden[i], agg_group_social_burden[i], index[i],
+            update_group_social_burden(numgroups[i], t, social_burden, group_social_burden[i], agg_group_social_burden[i], index[i],
                                 groupsize_pos[i])
             if do_validation:
                 update_group_errors(numgroups[i], t, val_errors, val_grouperrs[i], val_agg_grouperrs[i],
                                     val_index[i], val_groupsize_err_type[i])
-                update_group_social_burden(numgroups[i], t, val_social_cost, val_group_social_burden[i], val_agg_group_social_burden[i],
+                update_group_social_burden(numgroups[i], t, val_social_burden, val_group_social_burden[i], val_agg_group_social_burden[i],
                                     val_index[i], val_groupsize_pos[i])
 
             # Weight update type depends on relaxed or not
@@ -674,7 +674,7 @@ def create_stacked_bonus_plots(num_group_types, extra_error_types, numgroups, sp
 
 
 def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', C=1.0, 
-                        strategic_agent=False, tau_vector=(), social_cost=()):
+                        strategic_agent=False, tau_vector=(), social_burden=()):
     """
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """       
@@ -721,7 +721,7 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     if penalty in ['l1', 'l2'] and C > 1e15:
         errors[t, :] += compute_regularization_penalty(modelhat.coef_, penalty, C) * (0.5 if penalty == 'l2' else 1.0)
     if strategic_agent:
-        social_cost[t,:] = dist * move
+        social_burden[t,:] = dist * move * y
 
 def compute_regularization_penalty(coef, penalty, C):
     warnings.warn('WARNING: Regularization term is being applied to log-loss. If you did not intend, this, please set'
@@ -745,7 +745,7 @@ def update_group_errors(numgroups, t, errors, grouperrs, agg_grouperrs, index, g
         # Compute the aggregate-model average groups error with DP
         agg_grouperrs[t, g] = (agg_grouperrs[t - 1, g] * ((t - 1) / t)) + (grouperrs[t, g]) / t
 
-def update_group_social_burden(numgroups, t, social_cost, group_social_burden, agg_group_social_burden, index, groupsize_pos):
+def update_group_social_burden(numgroups, t, social_burden, group_social_burden, agg_group_social_burden, index, groupsize_pos):
     """
     Performs the groups-social-burden computations given the social costs from a single round. Modifies arrays in place
     and considers only positive labels.
@@ -754,7 +754,7 @@ def update_group_social_burden(numgroups, t, social_cost, group_social_burden, a
         # Compute the groups errors (true/FP/FN) for the newly made model
         if groupsize_pos[g] > 0:
             group_social_burden[t, g] = \
-                np.sum(social_cost[t, index[g]]) / groupsize_pos[g]
+                np.sum(social_burden[t, index[g]]) / groupsize_pos[g]
         else:
             group_social_burden[t,g] = 0    
     # Compute the aggregate-model average groups error with DP
@@ -781,12 +781,12 @@ def compute_mixture_pop_errors(errors, total_steps=None):
 
     return agg_pop_errors[1:]  # Remove first index which is a 0 for easier DP code
 
-#def compute_mixture_pop_social_burden(social_cost, total_steps=None):
+#def compute_mixture_pop_social_burden(social_burden, total_steps=None):
 #    """
 #    Compute and return the performance of the aggregate mixture model across all rounds using the errors of the specific
 #    model computed at each individual round.
 #    """
-#    numsteps, numsamples = social_cost.shape
+#    numsteps, numsamples = social_burden.shape
 #
 #    # Decrease numsteps if we converged early
 #    if total_steps is not None:
@@ -797,7 +797,7 @@ def compute_mixture_pop_errors(errors, total_steps=None):
 #    agg_pop_social_burden = np.zeros(numsteps)
 #
 #    for t in range(1, numsteps):
-#        agg_social_burden[t] = ((t - 1) / t) * agg_social_burden[t - 1, :] + social_cost[t, :] / t
+#        agg_social_burden[t] = ((t - 1) / t) * agg_social_burden[t - 1, :] + social_burden[t, :] / t
 #        agg_pop_social_burden[t] = np.sum(agg_social_burden[t]) / numsamples
 #
 #    return agg_pop_errors[1:]  # Remove first index which is a 0 for easier DP code
