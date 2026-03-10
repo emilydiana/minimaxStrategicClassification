@@ -182,10 +182,12 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     social_cost = np.zeros((numsteps, numsamples))  # Stores error for each member of pop for each round
     # Store errors for each groups over rounds both for individual model and aggregate mixture
     grouperrs, agg_grouperrs = create_group_error_arrays(num_group_types, numsteps, numgroups)
+    group_social_burden, agg_group_social_burden = create_group_error_arrays(num_group_types, numsteps, numgroups)
     if do_validation:
         val_errors = np.zeros((numsteps, val_numsamples))
         val_social_cost = np.zeros((numsteps, val_numsamples))
         val_grouperrs, val_agg_grouperrs = create_group_error_arrays(num_group_types, numsteps, numgroups)
+        val_group_social_burden, val_agg_group_social_burden = create_group_error_arrays(num_group_types, numsteps, numgroups)
 
     # In the case that total error is not the same as the specific error (e.g. FP, FN) for classification, we store both
     if model_type in classification_models:
@@ -432,9 +434,13 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         for i in range(num_group_types):
             update_group_errors(numgroups[i], t, errors, grouperrs[i], agg_grouperrs[i], index[i],
                                 groupsize_err_type[i])
+            update_group_social_burden(numgroups[i], t, social_cost, group_social_burden[i], agg_group_social_burden[i], index[i],
+                                groupsize_pos[i])
             if do_validation:
                 update_group_errors(numgroups[i], t, val_errors, val_grouperrs[i], val_agg_grouperrs[i],
                                     val_index[i], val_groupsize_err_type[i])
+                update_group_social_burden(numgroups[i], t, val_social_cost, val_group_social_burden[i], val_agg_group_social_burden[i],
+                                    val_index[i], val_groupsize_pos[i])
 
             # Weight update type depends on relaxed or not
             if relaxed:  # Projected Gradient descent
@@ -482,11 +488,14 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     # Truncate the groups error arrays to have length equal to the number of rounds actually performed
     # Remove 0th position in the arrays which stored the value 0 for easy DP
     agg_grouperrs = [arr[1:total_steps, :] for arr in agg_grouperrs]
+    agg_group_social_burden = [arr[1:total_steps, :] for arr in agg_group_social_burden]
     if do_validation:
         val_agg_grouperrs = [arr[1:total_steps, :] for arr in val_agg_grouperrs]
+        val_agg_group_social_burden = [arr[1:total_steps, :] for arr in val_agg_group_social_burden]
 
     # Computes the expected error of the mixture with respect to the population with DP style updates at each round
     agg_poperrs = compute_mixture_pop_errors(specific_errors[pop_error_type], total_steps)
+    #agg_pop_social_burden = compute_mixture_pop_errors(specific_errors[pop_error_type], total_steps)
     if do_validation:
         val_agg_poperrs = compute_mixture_pop_errors(val_specific_errors[pop_error_type], total_steps)
 
@@ -735,17 +744,20 @@ def update_group_errors(numgroups, t, errors, grouperrs, agg_grouperrs, index, g
         # Compute the aggregate-model average groups error with DP
         agg_grouperrs[t, g] = (agg_grouperrs[t - 1, g] * ((t - 1) / t)) + (grouperrs[t, g]) / t
 
-#def update_group_social_burden(numgroups, t, social_cost, grouperrs, agg_grouperrs, index, groupsize):
-#    """
-#    Performs the groups-social-burden computations given the social costs from a single round. Modifies arrays in place
-#    and considers only positive labels.
-#    """
-#    for g in range(0, numgroups):
-#        # Compute the groups errors (true/FP/FN) for the newly made model
-#        group_social_burden[t, g] = \
-#            np.sum(socisocial_cost[t, index[g]]) / groupsize[g]
-#        # Compute the aggregate-model average groups error with DP
-#        agg_grouperrs[t, g] = (agg_grouperrs[t - 1, g] * ((t - 1) / t)) + (grouperrs[t, g]) / t
+def update_group_social_burden(numgroups, t, social_cost, group_social_burden, agg_group_social_burden, index, groupsize_pos):
+    """
+    Performs the groups-social-burden computations given the social costs from a single round. Modifies arrays in place
+    and considers only positive labels.
+    """
+    for g in range(0, numgroups):
+        # Compute the groups errors (true/FP/FN) for the newly made model
+        if groupsize_pos[g] > 0:
+            group_social_burden[t, g] = \
+                np.sum(social_cost[t, index[g]]) / groupsize_pos[g]
+        else:
+            group_social_burden[t,g] = 0    
+    # Compute the aggregate-model average groups error with DP
+        agg_group_social_burden[t, g] = (agg_group_social_burden[t - 1, g] * ((t - 1) / t)) + (group_social_burden[t, g]) / t
 
 def compute_mixture_pop_errors(errors, total_steps=None):
     """
