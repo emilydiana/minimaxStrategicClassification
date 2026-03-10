@@ -178,10 +178,13 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
 
     # Instatiate all error arrays
     errors = np.zeros((numsteps, numsamples))  # Stores error for each member of pop for each round
+    # Instantiate social cost array
+    social_cost = np.zeros((numsteps, numsamples))  # Stores error for each member of pop for each round
     # Store errors for each groups over rounds both for individual model and aggregate mixture
     grouperrs, agg_grouperrs = create_group_error_arrays(num_group_types, numsteps, numgroups)
     if do_validation:
         val_errors = np.zeros((numsteps, val_numsamples))
+        val_social_cost = np.zeros((numsteps, val_numsamples))
         val_grouperrs, val_agg_grouperrs = create_group_error_arrays(num_group_types, numsteps, numgroups)
 
     # In the case that total error is not the same as the specific error (e.g. FP, FN) for classification, we store both
@@ -357,9 +360,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 for learner_tau in learner_tau_values:
                     curr_model = copy.deepcopy(modelhat)
                     shift_model(curr_model, learner_tau)
-                    
                     compute_model_errors(curr_model, X_train, y_train, t, temp_errors, error_type, penalty, 
-                    C, strategic_agent, tau_vector_train)
+                    C, strategic_agent, tau_vector_train, social_cost = social_cost)
                     
                     temp_index = index[0]
                     temp_groupsize = groupsize[0]
@@ -379,8 +381,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                         best_total_err = curr_total_err
                         best_max_err = curr_max_err
                         best_learner_tau = learner_tau                    
-
                 shift_model(modelhat, best_learner_tau)
+
         elif model_type == 'MLPClassifier':  # Pytorch's MLP wrapped with our custom class to work with the interface
             hidden_sizes = [numdims] + \
                            list(map(lambda x: x if np.floor(x) == x else int(np.floor(x * numdims)), hidden_sizes))
@@ -407,7 +409,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
 
         elif model_type in classification_models:
             # Updates errors array with the round-specific errors for each person for round t
-            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau_vector_train)
+            compute_model_errors(modelhat, X_train, y_train, t, errors, error_type, penalty, C, strategic_agent, tau_vector_train, social_cost = social_cost)
             # Compute the errors for all additional error types
             for err_type in extra_error_types:
                 compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C)
@@ -418,7 +420,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 if strategic_learner[1] == True:
                     val_modelhat = shift_model(val_modelhat, learner_tau_mean)
 
-                compute_model_errors(val_modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau_vector_test)
+                compute_model_errors(val_modelhat, X_test, y_test, t, val_errors, error_type, penalty, C, True, tau_vector_test, social_cost = val_social_cost)
 
                 for err_type in extra_error_types:
                     compute_model_errors(modelhat, X_test, y_test, t, val_specific_errors[err_type], err_type,
@@ -662,12 +664,11 @@ def create_stacked_bonus_plots(num_group_types, extra_error_types, numgroups, sp
 
 
 def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', C=1.0, 
-                        strategic_agent=False, tau_vector=()):
+                        strategic_agent=False, tau_vector=(), social_cost=()):
     """
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """       
     if strategic_agent:
-        
         coef_ = None
         y_pred = np.zeros(len(X))
         
@@ -709,7 +710,8 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     # Compute the regularization penalty if necessary and add it to the log loss
     if penalty in ['l1', 'l2'] and C > 1e15:
         errors[t, :] += compute_regularization_penalty(modelhat.coef_, penalty, C) * (0.5 if penalty == 'l2' else 1.0)
-
+    if strategic_agent:
+        social_cost[t,:] = dist * move
 
 def compute_regularization_penalty(coef, penalty, C):
     warnings.warn('WARNING: Regularization term is being applied to log-loss. If you did not intend, this, please set'
@@ -733,6 +735,17 @@ def update_group_errors(numgroups, t, errors, grouperrs, agg_grouperrs, index, g
         # Compute the aggregate-model average groups error with DP
         agg_grouperrs[t, g] = (agg_grouperrs[t - 1, g] * ((t - 1) / t)) + (grouperrs[t, g]) / t
 
+#def update_group_social_burden(numgroups, t, social_cost, grouperrs, agg_grouperrs, index, groupsize):
+#    """
+#    Performs the groups-social-burden computations given the social costs from a single round. Modifies arrays in place
+#    and considers only positive labels.
+#    """
+#    for g in range(0, numgroups):
+#        # Compute the groups errors (true/FP/FN) for the newly made model
+#        group_social_burden[t, g] = \
+#            np.sum(socisocial_cost[t, index[g]]) / groupsize[g]
+#        # Compute the aggregate-model average groups error with DP
+#        agg_grouperrs[t, g] = (agg_grouperrs[t - 1, g] * ((t - 1) / t)) + (grouperrs[t, g]) / t
 
 def compute_mixture_pop_errors(errors, total_steps=None):
     """
