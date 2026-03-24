@@ -12,7 +12,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
                 show_legend, error_type, data_name, model_string,
                 agg_poperrs, agg_grouperrs, groupweights, pop_error_type, bonus_plots,
                 dirname, tau, strategic_learner, multi_group=False,
-                validation=False, equal_error=False, curr_idx = 0):
+                validation=False, equal_error=False, curr_idx = 0, agg_pop_social_burden = None):
     """
     Helper function for minimaxML that creates the relevant plots for a single run of the simulation.
     """
@@ -22,8 +22,12 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     figures = []
     str_algs= ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
     alg_name = f'{str_algs[curr_idx]}'
-    figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
-                    f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
+    if agg_pop_social_burden is None:
+        figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
+                        f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
+    else:
+        figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_PopSocialBurden_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
+                        f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
 
     # Combine all the existing arrays as necessary by separating all subgroups as unqiue groups
     if multi_group:
@@ -62,6 +66,19 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
 
     if use_input_commands and display_plots:
         input("Next plot...")
+    
+    if agg_pop_social_burden is not None:
+        figures.append(plt.figure())  # Creates figure and adds it to list of figures
+        plt.plot(agg_pop_social_burden)
+        plt.title(f'Average Population Social Burden' + dataset_string)
+        plt.xlabel('Steps')
+        plt.ylabel(f'Average Population Social Burden')
+        if display_plots:
+            plt.show()
+
+    if agg_pop_social_burden is not None and use_input_commands and display_plots:
+        input("Next plot...")
+
 
     # Group Errors vs. Rounds
     figures.append(plt.figure())  # Create figure and append to list

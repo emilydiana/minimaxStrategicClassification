@@ -15,17 +15,17 @@ import random
 import os
 import warnings
 
-strategic_learner = [False, False] #strategic_learner[0]: is learner strategic in training, #strategic_learner[1]: is strategic in test
-strategic_agent = [False, True] 
-alg_spec = [False, False, False]    # the first two coordinates are respectively showing type of the learner and agents in the Tr phase, 
+strategic_learner = [True, True] #strategic_learner[0]: is learner strategic in training, #strategic_learner[1]: is strategic in test
+strategic_agent = [True, True] 
+alg_spec = [True, True, True]    # the first two coordinates are respectively showing type of the learner and agents in the Tr phase, 
                                     # and the last coordinate indicates learner behavior in the Ts phase.
                                     # In other words, alg_spec assign values to strategic_learner and strategic_agent as follows:
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
 tau_min = 1
-tau_max = 1
-tau_step = 1 
+tau_max = 6
+tau_step = 0.5 
 tau_group_values = None
 #tau_group_values = [0.1, 1,0.75,0.1]
 num_rounds = 1
@@ -60,7 +60,7 @@ fit_intercept = True  # If the linear model should fit an intercept (applies onl
 convergence_threshold = 1e-12  # Converge early if max change in sampleweights between rounds is less than threshold
 
 # Relaxed Model Settings
-use_multiple_gammas = True  # Set to True to run relaxed algo over many values of gamma
+use_multiple_gammas = False  # Set to True to run relaxed algo over many values of gamma
 num_gammas = 3  # If use_multiple_games, number of intermediate gammas to use between min and max feasible gamma
 # Use these arguments to run a single relaxed simulation with on gamma settting
 relaxed = False  # Determines if single run

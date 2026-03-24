@@ -495,10 +495,11 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
 
     # Computes the expected error of the mixture with respect to the population with DP style updates at each round
     agg_poperrs = compute_mixture_pop_errors(specific_errors[pop_error_type], total_steps)
-    #agg_pop_social_burden = compute_mixture_pop_social_burden(specific_errors[pop_error_type], total_steps)
+    agg_pop_social_burden = compute_mixture_pop_social_burden(social_burden, total_steps)
 
     if do_validation:
         val_agg_poperrs = compute_mixture_pop_errors(val_specific_errors[pop_error_type], total_steps)
+        val_agg_pop_social_burden = compute_mixture_pop_social_burden(val_social_burden, total_steps)
 
     # Plot and save results as necessary
     if display_plots or save_plots:
@@ -540,7 +541,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                     agg_poperrs, agg_grouperrs, groupweights,
                     pop_error_type, stacked_bonus_plots,
                     dirname, tau, strategic_learner,
-                    multi_group=True, curr_idx = curr_idx)
+                    multi_group=True, curr_idx = curr_idx, agg_pop_social_burden = agg_pop_social_burden)
         
         
         # Repeat for validation as necessary
@@ -781,26 +782,26 @@ def compute_mixture_pop_errors(errors, total_steps=None):
 
     return agg_pop_errors[1:]  # Remove first index which is a 0 for easier DP code
 
-#def compute_mixture_pop_social_burden(social_burden, total_steps=None):
-#    """
-#    Compute and return the performance of the aggregate mixture model across all rounds using the errors of the specific
-#    model computed at each individual round.
-#    """
-#    numsteps, numsamples = social_burden.shape
-#
-#    # Decrease numsteps if we converged early
-#    if total_steps is not None:
-#        numsteps = total_steps
-#
-#    # Instantiate arrays for aggregate errors
-#    agg_social_burden = np.zeros((numsteps, numsamples))
-#    agg_pop_social_burden = np.zeros(numsteps)
-#
-#    for t in range(1, numsteps):
-#        agg_social_burden[t] = ((t - 1) / t) * agg_social_burden[t - 1, :] + social_burden[t, :] / t
-#        agg_pop_social_burden[t] = np.sum(agg_social_burden[t]) / numsamples
-#
-#    return agg_pop_errors[1:]  # Remove first index which is a 0 for easier DP code
+def compute_mixture_pop_social_burden(social_burden, total_steps=None):
+    """
+    Compute and return the performance of the aggregate mixture model across all rounds using the errors of the specific
+    model computed at each individual round.
+    """
+    numsteps, numsamples = social_burden.shape
+
+    # Decrease numsteps if we converged early
+    if total_steps is not None:
+        numsteps = total_steps
+
+    # Instantiate arrays for aggregate social_burden 
+    agg_social_burden = np.zeros((numsteps, numsamples))
+    agg_pop_social_burden = np.zeros(numsteps)
+
+    for t in range(1, numsteps):
+        agg_social_burden[t] = ((t - 1) / t) * agg_social_burden[t - 1, :] + social_burden[t, :] / t
+        agg_pop_social_burden[t] = np.sum(agg_social_burden[t]) / numsamples
+
+    return agg_social_burden[1:]  # Remove first index which is a 0 for easier DP code
 
 def compute_mixture_group_errors(numgroups, errors, index, groupsize, total_steps=None):
     """
