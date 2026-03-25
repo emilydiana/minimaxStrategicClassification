@@ -679,24 +679,24 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     """
     Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
     """       
-    if strategic_agent:
-        coef_ = None
-        y_pred = np.zeros(len(X))
-        
-        if isinstance(modelhat, LinearSVM):
-            coef_ = modelhat.coef_
-            y_pred = modelhat.decision_function(X)
-        else:
-            coef_ = modelhat.regressor.coef_
-            y_pred = modelhat.regressor.predict(X)
-        norm_coef = np.linalg.norm(coef_)
-        dist =  np.abs(y_pred) / norm_coef
-       
-        move = (dist < tau_vector) & (y_pred < 0)
+    coef_ = None
+    y_pred = np.zeros(len(X))
+   
+    if isinstance(modelhat, LinearSVM):
+        coef_ = modelhat.coef_
+        y_pred = modelhat.decision_function(X)
+    else:
+        coef_ = modelhat.regressor.coef_
+        y_pred = modelhat.regressor.predict(X)
+    norm_coef = np.linalg.norm(coef_)
+    dist =  np.abs(y_pred) / norm_coef
+    move = (dist < tau_vector) & (y_pred < 0)
+    social_burden[t,:] = dist * move * y
+    
+    if strategic_agent:    
         manipulation = np.outer(y_pred/norm_coef**2, coef_)    
         stratX = np.copy(X)
         stratX[move] = X[move] - manipulation[move]         
-        
         yhat = modelhat.predict(stratX).ravel() 
     else:
         yhat = modelhat.predict(X).ravel()  # Compute predictions for the newly trained model
@@ -721,8 +721,6 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     # Compute the regularization penalty if necessary and add it to the log loss
     if penalty in ['l1', 'l2'] and C > 1e15:
         errors[t, :] += compute_regularization_penalty(modelhat.coef_, penalty, C) * (0.5 if penalty == 'l2' else 1.0)
-    if strategic_agent:
-        social_burden[t,:] = dist * move * y
 
 def compute_regularization_penalty(coef, penalty, C):
     warnings.warn('WARNING: Regularization term is being applied to log-loss. If you did not intend, this, please set'
@@ -795,13 +793,13 @@ def compute_mixture_pop_social_burden(social_burden, total_steps=None):
 
     # Instantiate arrays for aggregate social_burden 
     agg_social_burden = np.zeros((numsteps, numsamples))
-    agg_pop_social_burden = np.zeros(numsteps)
+    agg_pop_sb = np.zeros(numsteps)
 
     for t in range(1, numsteps):
         agg_social_burden[t] = ((t - 1) / t) * agg_social_burden[t - 1, :] + social_burden[t, :] / t
-        agg_pop_social_burden[t] = np.sum(agg_social_burden[t]) / numsamples
+        agg_pop_sb[t] = np.sum(agg_social_burden[t]) / numsamples
 
-    return agg_social_burden[1:]  # Remove first index which is a 0 for easier DP code
+    return agg_pop_sb[1:]  # Remove first index which is a 0 for easier DP code
 
 def compute_mixture_group_errors(numgroups, errors, index, groupsize, total_steps=None):
     """
