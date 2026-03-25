@@ -247,21 +247,33 @@ if __name__ == '__main__':
         tau_group_values = np.array(tau_group_values)
     avg_error = []
     max_error = []
+    avg_social_burden = []
+    max_social_burden = []
     val_avg_error = []
     val_max_error = []
+    val_avg_social_burden = []
+    val_max_social_burden = []
     #Emily hacky correction for upping seed each round
     random_split_seed -=1
     for t in range(num_rounds):
         random_split_seed +=1
         avg_error.append(defaultdict(lambda: [0] * 6))
         max_error.append(defaultdict(lambda: [0] * 6))
+        avg_social_burden.append(defaultdict(lambda: [0] * 6))
+        max_social_burden.append(defaultdict(lambda: [0] * 6))
         val_avg_error.append(defaultdict(lambda: [0] * 6))
         val_max_error.append(defaultdict(lambda: [0] * 6))
+        val_avg_social_burden.append(defaultdict(lambda: [0] * 6))
+        val_max_social_burden.append(defaultdict(lambda: [0] * 6))
         for tau in tau_list:                            
             curr_avg_error = [0] * 6 
             curr_max_error = [0] * 6
+            curr_avg_social_burden = [0] * 6 
+            curr_max_social_burden = [0] * 6
             curr_val_avg_error = [0] * 6
             curr_val_max_error = [0] * 6
+            curr_val_avg_social_burden = [0] * 6 
+            curr_val_max_social_burden = [0] * 6
         
             # Initialize tau vector. Different groups with different tau values        
             flattened_grouplabels = grouplabels.flatten()
@@ -330,12 +342,18 @@ if __name__ == '__main__':
                                 tau=tau, tau_vector=tau_vector,
                                 learner_tau_min_frac = learner_tau_min_frac, learner_tau_max_frac = learner_tau_max_frac, learner_tau_mean = learner_tau_mean,
                                 learner_tau_step = 0.1, curr_idx = curr_index,
-                                max_error=curr_max_error, avg_error=curr_avg_error, 
-                                val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error)
+                                max_error=curr_max_error, avg_error=curr_avg_error,
+                                max_social_burden = curr_max_social_burden, avg_social_burden = curr_avg_social_burden, 
+                                val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error,
+                                val_max_social_burden = curr_val_max_social_burden, val_avg_social_burden = curr_val_avg_social_burden) 
                     max_error[t][tau][curr_index] = curr_max_error[curr_index]
                     avg_error[t][tau][curr_index] = curr_avg_error[curr_index]
+                    max_social_burden[t][tau][curr_index] = curr_max_social_burden[curr_index]
+                    avg_social_burden[t][tau][curr_index] = curr_avg_social_burden[curr_index]
                     val_max_error[t][tau][curr_index] = curr_val_max_error[curr_index]
                     val_avg_error[t][tau][curr_index] = curr_val_avg_error[curr_index]
+                    val_max_social_burden[t][tau][curr_index] = curr_val_max_social_burden[curr_index]
+                    val_avg_social_burden[t][tau][curr_index] = curr_val_avg_social_burden[curr_index]
 
                 # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
                 else:
@@ -568,4 +586,6 @@ if __name__ == '__main__':
     else:
         plot_write_overall(error_type, outer_directory, data_name, max_error, avg_error, 
                        val_max_error, val_avg_error, tau, display_plots=False)
+        plot_write_overall(error_type, outer_directory, data_name, max_social_burden, avg_social_burden, 
+                       val_max_social_burden, val_avg_social_burden, tau, display_plots=False, social_burden = True)
 

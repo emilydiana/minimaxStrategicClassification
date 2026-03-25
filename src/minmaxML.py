@@ -32,7 +32,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 strategic_learner=False, strategic_agent=False, tau=0, tau_vector=(), 
                 learner_tau_min_frac = 0, learner_tau_max_frac = 1, learner_tau_mean = 0, learner_tau_step = 0.1, 
                 curr_idx=0, 
-                max_error=(), avg_error=(), val_max_error=(), val_avg_error=()):
+                max_error=(), avg_error=(), max_social_burden=(), avg_social_burden=(),
+                val_max_error=(), val_avg_error=(), val_max_social_burden = (), val_avg_social_burden = ()):
     #set the default value of display_plots to False 
     """
     :param X:  numpy matrix of features with dimensions numsamples x numdims
@@ -525,15 +526,27 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         agg_grouperrs_data = agg_grouperrs[0]
         y = np.max(agg_grouperrs_data, axis=1)
         
+        x_social = agg_pop_social_burden
+        agg_group_social_burden_data = agg_group_social_burden[0]
+        y_social = np.max(agg_group_social_burden_data, axis=1)
+        
         val_x = val_agg_poperrs
         val_agg_groupers_data = val_agg_grouperrs[0]
         val_y = np.max(val_agg_groupers_data, axis=1)
+        
+        val_x_social = val_agg_pop_social_burden
+        val_agg_group_social_burden_data = val_agg_group_social_burden[0]
+        val_y_social = np.max(val_agg_group_social_burden_data, axis=1)
        
         avg_error[curr_idx] = x[-1]
         max_error[curr_idx] = y[-1]
+        avg_social_burden[curr_idx] = x_social[-1]
+        max_social_burden[curr_idx] = y_social[-1]
 
         val_avg_error[curr_idx] = val_x[-1]
         val_max_error[curr_idx] = val_y[-1]
+        val_avg_social_burden[curr_idx] = val_x_social[-1]
+        val_max_social_burden[curr_idx] = val_y_social[-1]
         
         do_plotting(display_plots, save_plots, use_input_commands, total_steps, group_names_and_sizes_list,
                     group_types,

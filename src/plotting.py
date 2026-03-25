@@ -247,7 +247,7 @@ def pairwise_distance_distribution(X):
 
 
 def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error, 
-                        val_max_error, val_avg_error, tau, display_plots = False):
+                        val_max_error, val_avg_error, tau, display_plots = False, social_burden = False):
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
     tau_values = list(max_error[0].keys())
     #Loop through this and then aggregate results?
@@ -289,7 +289,10 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     val_avg_lower = mean_val_avg_error_array - val_avg_conf
 
     figures = []
-    figure_names = ['MaxGroupError', 'AvgPopError', 'val_MaxGroupError', 'val_AvgPopError']
+    if social_burden:
+        figure_names = ['MaxGroupSocialBurden', 'AvgPopSocialBurden', 'val_MaxGroupSocialBurden', 'val_AvgPopSocialBurden']
+    else:
+        figure_names = ['MaxGroupError', 'AvgPopError', 'val_MaxGroupError', 'val_AvgPopError']
     plt.ion()
     # Average Pop error vs. Rounds
     figures.append(plt.figure())  # Creates figure and adds it to list of figures
@@ -301,14 +304,20 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
         plt.fill_between(tau_x_ticks, max_upper[:, learner], max_lower[:, learner], alpha=0.1)
  
     plt.legend(loc='upper right')
-    plt.title(f'Max Group (Tr) Erorr Comparison{dataset_string}')
+    if social_burden:
+        plt.title(f'Max Group (Tr) Social Burden Comparison{dataset_string}')
+    else:
+        plt.title(f'Max Group (Tr) Error Comparison{dataset_string}')
     
     ## Changed 2 to 10
     tau_x_labels = [str(tau_values[i]) if i % 10 == 0 else '' for i in range(len(tau_values))]
     plt.xticks(tau_x_ticks, tau_x_labels)
     
     plt.xlabel('Manipulation Budget')
-    plt.ylabel(f'Max Group Error ({pop_error_type})')
+    if social_burden:
+        plt.ylabel(f'Max Group Social Burden')
+    else:
+        plt.ylabel(f'Max Group Error ({pop_error_type})')
 
     if display_plots:
         plt.show()
@@ -320,11 +329,16 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     
     plt.legend(loc='upper right')
     
-   
-    plt.title(f'Average Population (Tr) Error Comparison{dataset_string}')
+    if social_burden: 
+        plt.title(f'Average Population (Tr) Social Burden Comparison{dataset_string}')
+    else:
+        plt.title(f'Average Population (Tr) Error Comparison{dataset_string}')
     plt.xticks(tau_x_ticks, tau_x_labels)
     plt.xlabel('Manipulation Budget')
-    plt.ylabel(f'Average Population Error ({pop_error_type})')
+    if social_burden:
+        plt.ylabel(f'Average Population Social Burden')
+    else:
+        plt.ylabel(f'Average Population Error ({pop_error_type})')
 
     if display_plots:
         plt.show()
@@ -337,14 +351,20 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
 
  
     plt.legend(loc='upper right')
-    plt.title(f'Max Group (Ts) Erorr Comparison{dataset_string}')
+    if social_burden:
+        plt.title(f'Max Group (Ts) Social Burden Comparison{dataset_string}')
+    else:
+        plt.title(f'Max Group (Ts) Error Comparison{dataset_string}')
     
     tau_x_ticks = np.arange(0, len(mean_val_max_error_array[:, learner]))
     tau_x_labels = [str(tau_values[i]) if i % 1 == 0 else '' for i in range(len(tau_values))]
     plt.xticks(tau_x_ticks, tau_x_labels)
     
     plt.xlabel('Manipulation Budget')
-    plt.ylabel(f'Max Group Error ({pop_error_type})')
+    if social_burden:
+        plt.ylabel(f'Max Group Social Burden')
+    else:    
+        plt.ylabel(f'Max Group Error ({pop_error_type})')
 
     if display_plots:
         plt.show()
@@ -356,11 +376,17 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
         plt.fill_between(tau_x_ticks, val_avg_upper[:, learner], val_avg_lower[:, learner], alpha=0.1)
     
     plt.legend(loc='upper right')
-       
-    plt.title(f'Average Population (Ts) Error Comparison{dataset_string}')
+    
+    if social_burden:
+        plt.title(f'Average Population (Ts) Social Burden Comparison{dataset_string}')
+    else: 
+        plt.title(f'Average Population (Ts) Error Comparison{dataset_string}')
     plt.xticks(tau_x_ticks, tau_x_labels)
     plt.xlabel('Manipulation Budget')
-    plt.ylabel(f'Average Population Error ({pop_error_type})')
+    if social_burden:
+        plt.ylabel(f'Average Population Social Burden')
+    else:
+        plt.ylabel(f'Average Population Error ({pop_error_type})')
 
     if display_plots:
         plt.show()
