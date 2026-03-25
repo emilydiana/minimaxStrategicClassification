@@ -541,7 +541,9 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                     agg_poperrs, agg_grouperrs, groupweights,
                     pop_error_type, stacked_bonus_plots,
                     dirname, tau, strategic_learner,
-                    multi_group=True, curr_idx = curr_idx, agg_pop_social_burden = agg_pop_social_burden)
+                    multi_group=True, curr_idx = curr_idx,
+                    agg_pop_social_burden = agg_pop_social_burden,
+                    agg_group_social_burden = agg_group_social_burden)
         
         
         # Repeat for validation as necessary
@@ -557,7 +559,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                         val_agg_poperrs, val_agg_grouperrs, None,
                         pop_error_type, val_stacked_bonus_plots,
                         dirname, tau, strategic_learner, validation=True, multi_group=True, curr_idx = curr_idx,
-                        agg_pop_social_burden = val_agg_pop_social_burden)
+                        agg_pop_social_burden = val_agg_pop_social_burden, agg_group_social_burden = val_agg_group_social_burden)
     else:  # Ensures that return doesn't fail when we aren't plotting
         stacked_bonus_plots = None
         if do_validation:

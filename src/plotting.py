@@ -12,13 +12,13 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
                 show_legend, error_type, data_name, model_string,
                 agg_poperrs, agg_grouperrs, groupweights, pop_error_type, bonus_plots,
                 dirname, tau, strategic_learner, multi_group=False,
-                validation=False, equal_error=False, curr_idx = 0, agg_pop_social_burden = None):
+                validation=False, equal_error=False, curr_idx = 0,
+                agg_pop_social_burden = None, agg_group_social_burden = None):
     """
     Helper function for minimaxML that creates the relevant plots for a single run of the simulation.
     """
 
     # Create a list of all figures we want to save for later which will be passed into a function
-
     figures = []
     str_algs= ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
     alg_name = f'{str_algs[curr_idx]}'
@@ -26,13 +26,15 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
         figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
                         f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
     else:
-        figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_PopSocialBurden_vs_Rounds', f'{alg_name}_GroupError_vs_Rounds', 
+        figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_PopSocialBurden_vs_Rounds',
+                        f'{alg_name}_GroupError_vs_Rounds', f'{alg_name}_GroupSocialBurden_vs_Rounds',
                         f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
 
     # Combine all the existing arrays as necessary by separating all subgroups as unqiue groups
     if multi_group:
         num_group_types = len(agg_grouperrs)  # list of numpy arrays
         agg_grouperrs = np.column_stack(agg_grouperrs)  # vertically stck the groups errs
+        agg_group_social_burden = np.column_stack(agg_group_social_burden)  # vertically stck the groups errs
         if not validation:
             groupweights = np.column_stack(groupweights)  # vertically stack the weights for each groups
         stacked_group_names = []  # stack the groups errors
@@ -94,6 +96,21 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
         plt.show()
 
     if use_input_commands and display_plots:
+        input("Next plot...")
+    if agg_group_social_burden is not None:
+        figures.append(plt.figure())  # Creates figure and adds it to list of figures
+        for g in range(0, len(group_names)):
+            # Plots the groups with appropriate label
+            plt.plot(agg_group_social_burden[:, g], label=group_names[g])
+        if show_legend:
+            plt.legend(loc='upper right')
+        plt.title(f'Group Social Burden' + alg_name + dataset_string)
+        plt.xlabel('Steps')
+        plt.ylabel(f'Group Social Burden')
+        if display_plots:
+            plt.show()
+
+    if agg_group_social_burden is not None and use_input_commands and display_plots:
         input("Next plot...")
 
     # Group Weights vs. Rounds
