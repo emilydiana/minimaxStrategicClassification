@@ -417,6 +417,11 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
             for err_type in extra_error_types:
                 compute_model_errors(modelhat, X_train, y_train, t, specific_errors[err_type], err_type, penalty, C)
             # Repeat for validation
+            if strategic_learner[0] == False:
+                train_modelhat = copy.deepcopy(modelhat)
+                if strategic_learner[1] == True:
+                    train_modelhat = shift_model(train_modelhat, learner_tau_mean)
+                compute_social_burden(train_modelhat, X_train, y_train, t, tau_vector_train, social_burden = social_burden)
             if do_validation:
                 #whether shift the reported classifier in the test time
                 val_modelhat = copy.deepcopy(modelhat)
@@ -581,7 +586,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     # Save models as pythonic objects to either filesystem/S3 bucket
     if save_models:
         save_models_to_os(modelhats, dirname)
-
+    
     final_max_group_error = [-1 for _ in range(num_group_types)]
     highest_gamma = [-1 for _ in range(num_group_types)]
     for i in range(num_group_types):
@@ -737,6 +742,24 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
     # Compute the regularization penalty if necessary and add it to the log loss
     if penalty in ['l1', 'l2'] and C > 1e15:
         errors[t, :] += compute_regularization_penalty(modelhat.coef_, penalty, C) * (0.5 if penalty == 'l2' else 1.0)
+
+def compute_social_burden(modelhat, X, y, t, tau_vector=(), social_burden=()):
+    """
+    Computes the error of the round-specific model and puts the errors for each sample in column t of `errors` in place
+    """       
+    coef_ = None
+    y_pred = np.zeros(len(X))
+   
+    if isinstance(modelhat, LinearSVM):
+        coef_ = modelhat.coef_
+        y_pred = modelhat.decision_function(X)
+    else:
+        coef_ = modelhat.regressor.coef_
+        y_pred = modelhat.regressor.predict(X)
+    norm_coef = np.linalg.norm(coef_)
+    dist =  np.abs(y_pred) / norm_coef
+    move = (dist < tau_vector) & (y_pred < 0)
+    social_burden[t,:] = dist * move * y
 
 def compute_regularization_penalty(coef, penalty, C):
     warnings.warn('WARNING: Regularization term is being applied to log-loss. If you did not intend, this, please set'

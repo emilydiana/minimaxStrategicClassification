@@ -104,7 +104,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
             plt.plot(agg_group_social_burden[:, g], label=group_names[g])
         if show_legend:
             plt.legend(loc='upper right')
-        plt.title(f'Group Social Burden' + alg_name + dataset_string)
+        plt.title(f'Group Social Burden ' + alg_name + dataset_string)
         plt.xlabel('Steps')
         plt.ylabel(f'Group Social Burden')
         if display_plots:
