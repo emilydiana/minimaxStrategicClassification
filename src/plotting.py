@@ -260,7 +260,7 @@ def pairwise_distance_distribution(X):
 
 
 def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error, 
-                        val_max_error, val_avg_error, tau, display_plots = False, social_burden = False):
+                        val_max_error, val_avg_error, tau, display_plots = False, social_burden = False, normalized = False):
     dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
     tau_values = list(max_error[0].keys())
     #Loop through this and then aggregate results?
@@ -303,7 +303,10 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
 
     figures = []
     if social_burden:
-        figure_names = ['MaxGroupSocialBurden', 'AvgPopSocialBurden', 'val_MaxGroupSocialBurden', 'val_AvgPopSocialBurden']
+        if normalized:
+            figure_names = ['MaxNormalizedGroupSocialBurden', 'AvgNormalizedPopSocialBurden', 'val_MaxNormalizedGroupSocialBurden', 'val_AvgNormalizedPopSocialBurden']
+        else:
+            figure_names = ['MaxGroupSocialBurden', 'AvgPopSocialBurden', 'val_MaxGroupSocialBurden', 'val_AvgPopSocialBurden']
     else:
         figure_names = ['MaxGroupError', 'AvgPopError', 'val_MaxGroupError', 'val_AvgPopError']
     plt.ion()
@@ -328,7 +331,10 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     
     plt.xlabel('Manipulation Budget')
     if social_burden:
-        plt.ylabel(f'Max Group Social Burden')
+        if normalized:
+            plt.ylabel(f'Max Normalized Group Social Burden')
+        else:
+            plt.ylabel(f'Max Group Social Burden')
     else:
         plt.ylabel(f'Max Group Error ({pop_error_type})')
 
@@ -342,14 +348,20 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     
     plt.legend(loc='upper right')
     
-    if social_burden: 
-        plt.title(f'Average Population (Tr) Social Burden Comparison{dataset_string}')
+    if social_burden:
+        if normalized:
+            plt.title(f'Average Normalized Population (Tr) Social Burden Comparison{dataset_string}')
+        else:
+            plt.title(f'Average Population (Tr) Social Burden Comparison{dataset_string}')
     else:
         plt.title(f'Average Population (Tr) Error Comparison{dataset_string}')
     plt.xticks(tau_x_ticks, tau_x_labels)
     plt.xlabel('Manipulation Budget')
     if social_burden:
-        plt.ylabel(f'Average Population Social Burden')
+        if normalized:
+            plt.ylabel(f'Average Normalized Population Social Burden')
+        else:
+            plt.ylabel(f'Average Population Social Burden')
     else:
         plt.ylabel(f'Average Population Error ({pop_error_type})')
 
@@ -365,7 +377,10 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
  
     plt.legend(loc='upper right')
     if social_burden:
-        plt.title(f'Max Group (Ts) Social Burden Comparison{dataset_string}')
+        if normalized:
+            plt.title(f'Max Normalized Group (Ts) Social Burden Comparison{dataset_string}')
+        else:
+            plt.title(f'Max Group (Ts) Social Burden Comparison{dataset_string}')
     else:
         plt.title(f'Max Group (Ts) Error Comparison{dataset_string}')
     
@@ -391,7 +406,10 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
     plt.legend(loc='upper right')
     
     if social_burden:
-        plt.title(f'Average Population (Ts) Social Burden Comparison{dataset_string}')
+        if normalized:
+            plt.title(f'Average Normalized Population (Ts) Social Burden Comparison{dataset_string}')
+        else:
+            plt.title(f'Average Population (Ts) Social Burden Comparison{dataset_string}')
     else: 
         plt.title(f'Average Population (Ts) Error Comparison{dataset_string}')
     plt.xticks(tau_x_ticks, tau_x_labels)

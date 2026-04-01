@@ -109,7 +109,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 1  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 11  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -249,10 +249,14 @@ if __name__ == '__main__':
     max_error = []
     avg_social_burden = []
     max_social_burden = []
+    avg_normalized_social_burden = []
+    max_normalized_social_burden = []
     val_avg_error = []
     val_max_error = []
     val_avg_social_burden = []
     val_max_social_burden = []
+    val_avg_normalized_social_burden = []
+    val_max_normalized_social_burden = []
     #Emily hacky correction for upping seed each round
     random_split_seed -=1
     for t in range(num_rounds):
@@ -261,19 +265,27 @@ if __name__ == '__main__':
         max_error.append(defaultdict(lambda: [0] * 6))
         avg_social_burden.append(defaultdict(lambda: [0] * 6))
         max_social_burden.append(defaultdict(lambda: [0] * 6))
+        avg_normalized_social_burden.append(defaultdict(lambda: [0] * 6))
+        max_normalized_social_burden.append(defaultdict(lambda: [0] * 6))
         val_avg_error.append(defaultdict(lambda: [0] * 6))
         val_max_error.append(defaultdict(lambda: [0] * 6))
         val_avg_social_burden.append(defaultdict(lambda: [0] * 6))
         val_max_social_burden.append(defaultdict(lambda: [0] * 6))
+        val_avg_normalized_social_burden.append(defaultdict(lambda: [0] * 6))
+        val_max_normalized_social_burden.append(defaultdict(lambda: [0] * 6))
         for tau in tau_list:                            
             curr_avg_error = [0] * 6 
             curr_max_error = [0] * 6
             curr_avg_social_burden = [0] * 6 
             curr_max_social_burden = [0] * 6
+            curr_avg_normalized_social_burden = [0] * 6 
+            curr_max_normalized_social_burden = [0] * 6
             curr_val_avg_error = [0] * 6
             curr_val_max_error = [0] * 6
             curr_val_avg_social_burden = [0] * 6 
             curr_val_max_social_burden = [0] * 6
+            curr_val_avg_normalized_social_burden = [0] * 6 
+            curr_val_max_normalized_social_burden = [0] * 6
         
             # Initialize tau vector. Different groups with different tau values        
             flattened_grouplabels = grouplabels.flatten()
@@ -344,17 +356,21 @@ if __name__ == '__main__':
                                 learner_tau_step = 0.1, curr_idx = curr_index,
                                 max_error=curr_max_error, avg_error=curr_avg_error,
                                 max_social_burden = curr_max_social_burden, avg_social_burden = curr_avg_social_burden, 
+                                max_normalized_social_burden = curr_max_normalized_social_burden, avg_normalized_social_burden = curr_avg_normalized_social_burden, 
                                 val_max_error=curr_val_max_error, val_avg_error=curr_val_avg_error,
                                 val_max_social_burden = curr_val_max_social_burden, val_avg_social_burden = curr_val_avg_social_burden,
+                                val_max_normalized_social_burden = curr_val_max_normalized_social_burden, val_avg_normalized_social_burden = curr_val_avg_normalized_social_burden,
                                 tau_group_values = tau_group_values) 
                     max_error[t][tau][curr_index] = curr_max_error[curr_index]
                     avg_error[t][tau][curr_index] = curr_avg_error[curr_index]
                     max_social_burden[t][tau][curr_index] = curr_max_social_burden[curr_index]
                     avg_social_burden[t][tau][curr_index] = curr_avg_social_burden[curr_index]
+                    max_normalized_social_burden[t][tau][curr_index] = curr_max_normalized_social_burden[curr_index]
+                    avg_normalized_social_burden[t][tau][curr_index] = curr_avg_normalized_social_burden[curr_index]
                     val_max_error[t][tau][curr_index] = curr_val_max_error[curr_index]
                     val_avg_error[t][tau][curr_index] = curr_val_avg_error[curr_index]
-                    val_max_social_burden[t][tau][curr_index] = curr_val_max_social_burden[curr_index]
-                    val_avg_social_burden[t][tau][curr_index] = curr_val_avg_social_burden[curr_index]
+                    val_max_normalized_social_burden[t][tau][curr_index] = curr_val_max_normalized_social_burden[curr_index]
+                    val_avg_normalized_social_burden[t][tau][curr_index] = curr_val_avg_normalized_social_burden[curr_index]
 
                 # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
                 else:
@@ -589,4 +605,6 @@ if __name__ == '__main__':
                        val_max_error, val_avg_error, tau, display_plots=False)
         plot_write_overall(error_type, outer_directory, data_name, max_social_burden, avg_social_burden, 
                        val_max_social_burden, val_avg_social_burden, tau, display_plots=False, social_burden = True)
+        plot_write_overall(error_type, outer_directory, data_name, max_normalized_social_burden, avg_normalized_social_burden, 
+                       val_max_normalized_social_burden, val_avg_normalized_social_burden, tau, display_plots=False, social_burden = True, normalized = True)
 
