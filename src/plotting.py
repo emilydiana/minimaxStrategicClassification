@@ -13,7 +13,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
                 agg_poperrs, agg_grouperrs, groupweights, pop_error_type, bonus_plots,
                 dirname, tau, strategic_learner, multi_group=False,
                 validation=False, equal_error=False, curr_idx = 0,
-                agg_pop_social_burden = None, agg_group_social_burden = None):
+                agg_pop_social_burden = None, agg_group_social_burden = None, tau_group_values = None):
     """
     Helper function for minimaxML that creates the relevant plots for a single run of the simulation.
     """
@@ -28,6 +28,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     else:
         figure_names = [f'{alg_name}_PopError_vs_Rounds', f'{alg_name}_PopSocialBurden_vs_Rounds',
                         f'{alg_name}_GroupError_vs_Rounds', f'{alg_name}_GroupSocialBurden_vs_Rounds',
+                        f'{alg_name}_NormalizedGroupSocialBurden_vs_rounds',
                         f'{alg_name}_GroupWeights_vs_Rounds', f'{alg_name}_Trajectory_Plot']
 
     # Combine all the existing arrays as necessary by separating all subgroups as unqiue groups
@@ -94,7 +95,7 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
     plt.ylabel(f'Group Errors ({error_type})')
     if display_plots:
         plt.show()
-
+    
     if use_input_commands and display_plots:
         input("Next plot...")
     if agg_group_social_burden is not None:
@@ -107,6 +108,18 @@ def do_plotting(display_plots, save_plots, use_input_commands, numsteps, group_n
         plt.title(f'Group Social Burden ' + alg_name + dataset_string)
         plt.xlabel('Steps')
         plt.ylabel(f'Group Social Burden')
+        if display_plots:
+            plt.show()
+        
+        figures.append(plt.figure())  # Creates figure and adds it to list of figures
+        for g in range(0, len(group_names)):
+            # Plots the groups with appropriate label
+            plt.plot(agg_group_social_burden[:, g]/(tau*tau_group_values[g]), label=group_names[g])
+        if show_legend:
+            plt.legend(loc='upper right')
+        plt.title(f'Normalized Group Social Burden ' + alg_name + dataset_string)
+        plt.xlabel('Steps')
+        plt.ylabel(f'Normalized Group Social Burden')
         if display_plots:
             plt.show()
 

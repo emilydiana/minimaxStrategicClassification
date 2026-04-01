@@ -33,7 +33,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 learner_tau_min_frac = 0, learner_tau_max_frac = 1, learner_tau_mean = 0, learner_tau_step = 0.1, 
                 curr_idx=0, 
                 max_error=(), avg_error=(), max_social_burden=(), avg_social_burden=(),
-                val_max_error=(), val_avg_error=(), val_max_social_burden = (), val_avg_social_burden = ()):
+                val_max_error=(), val_avg_error=(), val_max_social_burden = (), val_avg_social_burden = (),
+                tau_group_values = ()):
     #set the default value of display_plots to False 
     """
     :param X:  numpy matrix of features with dimensions numsamples x numdims
@@ -552,7 +553,6 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         val_max_error[curr_idx] = val_y[-1]
         val_avg_social_burden[curr_idx] = val_x_social[-1]
         val_max_social_burden[curr_idx] = val_y_social[-1]
-        
         do_plotting(display_plots, save_plots, use_input_commands, total_steps, group_names_and_sizes_list,
                     group_types,
                     show_legend, error_type, data_name, model_string,
@@ -561,7 +561,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                     dirname, tau, strategic_learner,
                     multi_group=True, curr_idx = curr_idx,
                     agg_pop_social_burden = agg_pop_social_burden,
-                    agg_group_social_burden = agg_group_social_burden)
+                    agg_group_social_burden = agg_group_social_burden,
+                    tau_group_values = tau_group_values)
         
         
         # Repeat for validation as necessary
@@ -577,7 +578,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                         val_agg_poperrs, val_agg_grouperrs, None,
                         pop_error_type, val_stacked_bonus_plots,
                         dirname, tau, strategic_learner, validation=True, multi_group=True, curr_idx = curr_idx,
-                        agg_pop_social_burden = val_agg_pop_social_burden, agg_group_social_burden = val_agg_group_social_burden)
+                        agg_pop_social_burden = val_agg_pop_social_burden, agg_group_social_burden = val_agg_group_social_burden,
+                        tau_group_values = tau_group_values)
     else:  # Ensures that return doesn't fail when we aren't plotting
         stacked_bonus_plots = None
         if do_validation:
