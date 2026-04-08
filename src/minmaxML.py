@@ -508,12 +508,12 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     # Computes the expected error of the mixture with respect to the population with DP style updates at each round
     agg_poperrs = compute_mixture_pop_errors(specific_errors[pop_error_type], total_steps)
     agg_pop_social_burden = compute_mixture_pop_social_burden(social_burden, total_steps)
-    agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(np.nan_to_num(social_burden/tau_vector_train, total_steps, nan=0.0))
+    agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(np.nan_to_num(social_burden/tau_vector_train, nan=0.0), total_steps)
 
     if do_validation:
         val_agg_poperrs = compute_mixture_pop_errors(val_specific_errors[pop_error_type], total_steps)
         val_agg_pop_social_burden = compute_mixture_pop_social_burden(val_social_burden, total_steps)
-        val_agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(np.nan_to_num(val_social_burden/tau_vector_test, total_steps, nan=0.0))
+        val_agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(np.nan_to_num(val_social_burden/tau_vector_test, nan=0.0), total_steps)
 
     # Plot and save results as necessary
     if display_plots or save_plots:
