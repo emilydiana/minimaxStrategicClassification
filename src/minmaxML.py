@@ -498,22 +498,22 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
     # Remove 0th position in the arrays which stored the value 0 for easy DP
     agg_grouperrs = [arr[1:total_steps, :] for arr in agg_grouperrs]
     agg_group_social_burden = [arr[1:total_steps, :] for arr in agg_group_social_burden]
-    agg_normalized_group_social_burden = agg_group_social_burden/(tau_group_values*tau) 
+    agg_normalized_group_social_burden = np.nan_to_num(agg_group_social_burden/(tau_group_values*tau), nan=0.0)
     
     if do_validation:
         val_agg_grouperrs = [arr[1:total_steps, :] for arr in val_agg_grouperrs]
         val_agg_group_social_burden = [arr[1:total_steps, :] for arr in val_agg_group_social_burden]
-        val_agg_normalized_group_social_burden = val_agg_group_social_burden/(tau_group_values*tau)
+        val_agg_normalized_group_social_burden = np.nan_to_num(val_agg_group_social_burden/(tau_group_values*tau), nan=0.0)
 
     # Computes the expected error of the mixture with respect to the population with DP style updates at each round
     agg_poperrs = compute_mixture_pop_errors(specific_errors[pop_error_type], total_steps)
     agg_pop_social_burden = compute_mixture_pop_social_burden(social_burden, total_steps)
-    agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(social_burden/tau_vector_train, total_steps)
+    agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(np.nan_to_num(social_burden/tau_vector_train, total_steps, nan=0.0))
 
     if do_validation:
         val_agg_poperrs = compute_mixture_pop_errors(val_specific_errors[pop_error_type], total_steps)
         val_agg_pop_social_burden = compute_mixture_pop_social_burden(val_social_burden, total_steps)
-        val_agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(val_social_burden/tau_vector_test, total_steps)
+        val_agg_normalized_pop_social_burden = compute_mixture_pop_social_burden(np.nan_to_num(val_social_burden/tau_vector_test, total_steps, nan=0.0))
 
     # Plot and save results as necessary
     if display_plots or save_plots:
@@ -558,7 +558,7 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
         val_x_normalized_social = val_agg_normalized_pop_social_burden
         val_agg_normalized_group_social_burden_data = val_agg_normalized_group_social_burden[0]
         val_y_normalized_social = np.max(val_agg_normalized_group_social_burden_data, axis=1)
-       
+ 
         avg_error[curr_idx] = x[-1]
         max_error[curr_idx] = y[-1]
         avg_social_burden[curr_idx] = x_social[-1]
