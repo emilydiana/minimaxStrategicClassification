@@ -109,7 +109,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 11  # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 11 # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -369,6 +369,8 @@ if __name__ == '__main__':
                     avg_normalized_social_burden[t][tau][curr_index] = curr_avg_normalized_social_burden[curr_index]
                     val_max_error[t][tau][curr_index] = curr_val_max_error[curr_index]
                     val_avg_error[t][tau][curr_index] = curr_val_avg_error[curr_index]
+                    val_max_social_burden[t][tau][curr_index] = curr_val_max_social_burden[curr_index]
+                    val_avg_social_burden[t][tau][curr_index] = curr_val_avg_social_burden[curr_index]
                     val_max_normalized_social_burden[t][tau][curr_index] = curr_val_max_normalized_social_burden[curr_index]
                     val_avg_normalized_social_burden[t][tau][curr_index] = curr_val_avg_normalized_social_burden[curr_index]
 
