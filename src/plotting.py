@@ -424,4 +424,52 @@ def plot_write_overall(pop_error_type, dirname, data_name, max_error, avg_error,
 
     save_plots_to_os(figures, figure_names, dirname)
     plt.close('all')
+
+def plot_error_sb(pop_error_type, dirname, data_name, max_sb, val_max_error, val_max_sb, normalized = False):
+    dataset_string = f' on {data_name[0].upper() + data_name[1:]}'  # Set the first letter to capital if it isn't
+    tau_values = list(val_max_error[0].keys())
+    #Loop through this and then aggregate results?
+    trials = len(val_max_error)
+    val_max_error_array = []
+    val_max_sb_array = []
+    for t in range(trials):
+        val_max_error_array.append(np.zeros((len(tau_values),6)))
+        val_max_sb_array.append(np.zeros((len(tau_values),6)))
+        write_error_array(val_max_sb[t], val_max_error[t], val_max_error_array[t], val_max_sb_array[t], tau_values, dirname, "val-")    
     
+    #Make mean, upper, and lower arrays
+    mean_val_max_error_array = np.mean(val_max_error_array, axis=0)
+    val_max_conf = 1.96*np.std(val_max_error_array, axis=0)/np.sqrt(len(val_max_error_array[0]))
+    mean_val_max_sb_array = np.mean(val_max_sb_array, axis=0)
+    val_sb_conf = 1.96*np.std(val_max_sb_array, axis=0)/np.sqrt(len(val_max_sb_array[0]))
+    #May need to threshold at 0
+    val_max_upper = mean_val_max_error_array + val_max_conf
+    val_max_lower = mean_val_max_error_array - val_max_conf
+    
+    val_sb_upper = mean_val_max_sb_array + val_sb_conf
+    val_sb_lower = mean_val_max_sb_array - val_sb_conf
+
+    figures = []
+    if normalized:
+        figure_names = ['val_MaxNormalizedGroupSocialBurden_vs_ValMaxGroupError', 'ValMaxGroupError_vs_ValMaxNormalizedGroupSocialBurden']
+    else:
+        figure_names = ['valMaxGroupSocialBurden_vs_valMaxGroupError', 'valMaxGroupError_vs_valMaxGroupSocialBurden']
+    plt.ion()
+    
+    figures.append(plt.figure())  # Creates figure and adds it to list of figures
+    learner_types = ['Non-Strategic', '' , 'Na\u00EFve Strategic', '' , '' , 'Ours']
+    for learner in [0, 2, 5]:
+        # Plots the groups with appropriate label
+        plt.plot(val_max_sb_array[:,learner], val_mean_max_error_array[:, learner], label=learner_types[learner])
+        plt.fill_between(val_max_sb_array[:,learner], val_max_upper[:, learner], max_lower[:, learner], alpha=0.1)
+ 
+    plt.legend(loc='upper right')
+    plt.title(f'Social Burden vs Max Group Error (Ts) Comparison{dataset_string}')
+    if normalized:
+        plt.xlabel(f'Max Normalized Group Social Burden')
+    else:
+        plt.xlabel(f'Max Group Social Burden')
+    plt.ylabel('Max Group Error')
+    
+    save_plots_to_os(figures, figure_names, dirname)
+    plt.close('all')

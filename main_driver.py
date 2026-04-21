@@ -9,7 +9,7 @@ from dataset_mapping import get_dataset_features
 from src.plot_relaxed_pareto import do_pareto_plot
 from src.write_params_to_file import write_params_to_os
 from collections import defaultdict
-from src.plotting import plot_write_overall
+from src.plotting import plot_write_overall, plot_error_sb
 import numpy as np
 import random
 import os
@@ -23,11 +23,11 @@ alg_spec = [True, True, True]    # the first two coordinates are respectively sh
                                     # strategic_learner[0] = alg_spec[0]
                                     # strategic_learner[1] = alg_spec[2]    
                                     # strategic_agent = alg_spec[1]       
-tau_min = 1
-tau_max = 6
+tau_min = 0
+tau_max =6 
 tau_step = 0.5 
 tau_group_values = None
-#tau_group_values = [0.1, 1,0.75,0.1]
+#tau_group_values = [0.25, 1, 1, 0.25]
 num_rounds = 1
 decimal_size = 1
 
@@ -109,7 +109,7 @@ datasets = {1: 'COMPAS', 2: 'COMPAS_full', 3: 'Default', 4: 'Communities', 5: 'A
 
 # 1, 4, , 8, 11
  
-data_index = 11 # Set this to select a dataset by index according to the mapping above (0 for synthetic)
+data_index = 8 # Set this to select a dataset by index according to the mapping above (0 for synthetic)
 drop_group_as_feature = True  # Set to False (default) if groups should also be a one hot encoded categorical feature
 
 # Data read/write settings
@@ -373,7 +373,6 @@ if __name__ == '__main__':
                     val_avg_social_burden[t][tau][curr_index] = curr_val_avg_social_burden[curr_index]
                     val_max_normalized_social_burden[t][tau][curr_index] = curr_val_max_normalized_social_burden[curr_index]
                     val_avg_normalized_social_burden[t][tau][curr_index] = curr_val_avg_normalized_social_burden[curr_index]
-
                 # If we do the relaxed version of the code, use an unrelaxed simulation to find the bounds on gamma
                 else:
                     print('Starting a multi-round relaxed simulation over many values of gamma.')
@@ -609,4 +608,4 @@ if __name__ == '__main__':
                        val_max_social_burden, val_avg_social_burden, tau, display_plots=False, social_burden = True)
         plot_write_overall(error_type, outer_directory, data_name, max_normalized_social_burden, avg_normalized_social_burden, 
                        val_max_normalized_social_burden, val_avg_normalized_social_burden, tau, display_plots=False, social_burden = True, normalized = True)
-
+        plot_error_sb(error_type, outer_directory, data_name, max_error, max_social_burden, val_max_error, val_max_social_burden)
