@@ -1,54 +1,74 @@
-# MinimaxFair - Convergent Algorithms for (Relaxed) Minimax Group Fairness
+# Minimax Group Fairness in Strategic Classification
 
+Code accompanying the submission “Minimax Group Fairness in Strategic Classification”.
+This archive provides experiments comparing minimax fair strategic learning with
+non-strategic learning and a post-processing strategic baseline. It also supports
+relaxed minimax fairness experiments that trade off overall error and worst-group error.
 
-MinimaxFair is a Python package for training ML models for (relaxed) minimax group fairness as discussed in https://arxiv.org/abs/2011.03108
-
-This repository contains python code for 
-* learning models that achieve minimax group fairness for both regression and classification tasks
-* learning models that minimize error subject to relaxed group fairness constraints
-* visualizing tradeoffs between fairness and overall error
-
-We also include some examples of fairness sensitive datasets for experimentation, though our package supports any
- dataset formatted as a .csv whose columns are labeled
-
-
-Our algorithms support the following training objectives (loss functions):
-* Mean Squared Error
-* 0/1 Loss
-* Log Loss
-* False Positive Rate
-* False Negative Rate
-
-Our algorithms support the following model classes:
-* Linear Regression
-* Logistic Regression
-* Paired Regression Classifier from https://github.com/algowatchpenn/GerryFair
-* Perceptron
-* Multi-Layer Perceptron for Classification - Uses custom wrapper class to work with our algorithm
-
+The implementation uses a heuristic learning oracle based on shifting linear
+classifiers. It is an experimental implementation, not an implementation of an
+exact oracle for arbitrary hypothesis classes or manipulation costs.
 
 ## Installation
 
-To install the package and prepare for use, run:
+Extract the submission archive and open a terminal in its root directory.
+Create a virtual environment and install the dependencies:
 
-```
-git clone https://github.com/amazon-research/minimax-fair.git
-```
-
-The current version of the package uses the following packages: pandas, numpy, sklearn, matplotlib, pytorch, and
- scipy. If you do not have these packages, please run the following command to install them:
- 
-```
- pip install -r requirements.txt
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 ```
 
-## Using our package
+The dependency versions are not pinned; the archive does not include a verified
+historical environment. The code uses NumPy, pandas, scikit-learn, Matplotlib,
+PyTorch, and SciPy.
 
-To use our package, we recommend modifying the relevant parameters in `main_driver.py` (which are described in detail
- within the file itself) and then running the following in the terminal from the root directory of MinimaxFair:
- ```
+## Running experiments
+
+Configure the settings near the top of `main_driver.py`, then run from the
+repository root:
+
+```sh
 python3 main_driver.py
 ```
+
+There is no command-line configuration interface. Important settings are:
+
+| Setting | Purpose |
+| --- | --- |
+| `data_index` | Dataset: COMPAS (1), Communities (4), Credit (8), Heart (11), or synthetic data (0). |
+| `model_index` | Model class; the default is the paired regression classifier (4). |
+| `numsteps` | Number of learning iterations (default: 3000). |
+| `num_rounds` | Number of repeated train/test splits (default: 1). |
+| `random_split_seed` | Initial split seed; incremented between repetitions. |
+| `tau_min`, `tau_max`, `tau_step` | Manipulation-budget sweep; inspect the construction of `tau_list` before changing the range. |
+| `tau_group_values` | Group-specific budget multipliers; `None` gives equal multipliers. |
+| `use_multiple_gammas`, `num_gammas` | Enable a sweep of relaxed fairness thresholds. |
+| `relaxed`, `gamma` | Configure a single relaxed run when the multiple-gamma sweep is disabled. |
+| `save_plots`, `save_models` | Control saved plots and models. |
+
+The driver runs three configurations inside its experiment loop:
+
+- `[False, False, False]`: non-strategic training without a test-time classifier shift.
+- `[True, True, False]`: strategic training with strategic agents.
+- `[False, False, True]`: non-strategic training followed by a test-time classifier shift.
+
+Strategic agent responses are used for test evaluation in `src/minmaxML.py`.
+Changing only the top-level `alg_spec` value does not select a single configuration;
+the loop in the driver overrides it.
+
+Results are written beneath `experiments/`, with folders identifying the dataset
+and group budget multipliers. Plotting, parameter writing, and optional model
+saving are implemented in `src/`. Dataset caches are written to
+`vectorized_datasets/`. The default cache filename is `adults.npz`, even when a
+different dataset is selected; choose a dataset-specific filename before running
+if you want to preserve the bundled cache. Output settings in the driver can be
+overridden by the experiment loop.
+
+The defaults run the Heart dataset. They do not reproduce every figure in the
+manuscript in one invocation. Reproducing the full experiments requires selecting
+the corresponding datasets, budgets, repetitions, and fairness settings.
 
 ## Datasets
 
@@ -138,27 +158,35 @@ Downloading instructions: In the Data Folder, download `winequality-red.data`, a
   `combine_wine_data.py` which will create a new csv named `winequality-full.csv` in the `datasets` folder which is
    ready for use.
 
-### Running the code with pre-configured datasets
+### Dataset selection and custom data
 
-To use a pre-configured dataset simply change the value of
- `use_preconfigured_dataset` to True and select the relevant dataset index in `main_drive .py`. This selects the
- relevant parameter values which can be viewed for each dataset in the file `dataset_mapping.py`.
+Set `use_preconfigured_dataset = True` and choose `data_index` in `main_driver.py`.
+The column mappings, group definitions, and filenames are in `dataset_mapping.py`.
+Some CSV datasets are bundled; download or prepare any missing files using the
+instructions above. Preprocessing scripts that use `../datasets/` must be run
+with `src/` as the working directory.
 
- This setting can also be used to generate customized synthetic data using the dataset index 0. Settings for
- synthetic data generation are described in more detail in `main_driver.py`.
- 
- 
-### Using custom datasets
+For custom CSV data, set `use_preconfigured_dataset = False` and configure `path`,
+`label`, `groups`, `usable_features`, and `categorical_columns` in the driver.
+Cached data can override these settings, so check the cache-loading section before
+running a new configuration.
 
-Our algorithm can be used with any dataset that is in the form of csv files with labeled columns. To use a custom
- dataset, do the following:
- 1) Place the csv file for the dataset in the `datasets` folder which is located in the root directory of the package
- 2) Specify the relevant parameters for interpreting the dataset in the section starting on line 63 of `main_driver
- .py` 
-    * Relevant parameters include target label, column labels for group categories, usable features, etc.
- 3) Ensure the other parameters in `main_driver.py` have the desired value and run the file from the command line as
- described above
+## Code organization
 
+- `main_driver.py`: experiment settings, configuration loops, and aggregate plots.
+- `dataset_mapping.py`: dataset filenames and feature/group mappings.
+- `src/minmaxML.py`: minimax/relaxed learning and strategic evaluation.
+- `src/paired_regression_classifier.py`, `src/linear_svm.py`, `src/torch_wrapper.py`: model implementations.
+- Other `src/` modules: data preparation, saving, and plotting utilities.
+- `datasets/`: input CSV files.
+- `vectorized_datasets/`: preprocessed dataset caches.
+
+## Third-party provenance and license notices
+
+This code builds on the MinimaxFair implementation. The original third-party
+copyright and Apache-2.0 notices are retained in source files. Some model and
+dataset documentation refers to GerryFair; those references credit external
+resources. Dataset use remains subject to the terms of the original providers.
 
 ## License
 
@@ -175,19 +203,5 @@ Our algorithm can be used with any dataset that is in the form of csv files with
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
-
-## Citation
-
-If you publish material that uses this code, you can use the following citation:
-
-```js
-@inproceedings{diana2021minimax,
-title={Minimax Group Fairness: Algorithms and Experiments},
-author={Diana, Emily and Gill, Wesley and Kearns, Michael and Kenthapadi, Krishnaram and Roth, Aaron},
-year = {2021},
-booktitle={Proceedings of the AAAI/ACM Conference on AI, Ethics, and Society}
-}
-```
 
 

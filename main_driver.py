@@ -249,7 +249,7 @@ if __name__ == '__main__':
     max_error = []
     val_avg_error = []
     val_max_error = []
-    #Emily hacky correction for upping seed each round
+    # Offset the seed so the first repetition uses the configured value.
     random_split_seed -=1
     for t in range(num_rounds):
         random_split_seed +=1
