@@ -686,6 +686,10 @@ def compute_model_errors(modelhat, X, y, t, errors, error_type, penalty='none', 
         stratX[move] = X[move] - manipulation[move]         
         
         yhat = modelhat.predict(stratX).ravel() 
+        # Movers are projected exactly onto the boundary, where floating-point rounding can leave
+        # the score at about -1e-18 and wrongly reject them. By construction they are accepted.
+        yhat = np.asarray(yhat, dtype=float)
+        yhat[move] = 1
     else:
         yhat = modelhat.predict(X).ravel()  # Compute predictions for the newly trained model
 
