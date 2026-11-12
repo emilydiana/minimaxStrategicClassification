@@ -17,6 +17,12 @@ import warnings
 from src.plotting import pairwise_distance_distribution
 
 
+# How the Robust PRC heuristic chooses its shift: 'weighted' (default) minimizes the round's weighted
+# training error, as the WERM oracle in the paper does; 'maxgroup' is the original rule (minimize the max
+# group error regardless of the weights). Override with the SHIFT_CRITERION environment variable.
+SHIFT_CRITERION = os.environ.get('SHIFT_CRITERION', 'weighted')
+
+
 def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scale_eta_by_label_range=True,
                 gamma=0.0, relaxed=False, rescale_features=True,
                 model_type='LinearRegression', error_type='Total',
@@ -371,6 +377,11 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                     
                     curr_max_err = np.max(temp_grouperrs)
                     curr_total_err = np.sum(temp_grouperrs)
+                    if SHIFT_CRITERION == 'weighted':
+                        # WERM: pick the shift minimizing the error weighted by this round's sample weights
+                        # (group weights from Algorithm 1, or n_g/n + lambda_g from Algorithm 2), so the
+                        # oracle responds to the dual player. Ties broken by max group error.
+                        curr_max_err, curr_total_err = np.dot(avg_sampleweights, temp_errors[t]), curr_max_err
                     if curr_max_err < best_max_err:
                         best_total_err = curr_total_err
                         best_max_err = curr_max_err
