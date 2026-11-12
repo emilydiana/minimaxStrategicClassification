@@ -21,6 +21,25 @@ from src.plotting import pairwise_distance_distribution
 # training error, as the WERM oracle in the paper does; 'maxgroup' is the original rule (minimize the max
 # group error regardless of the weights). Override with the SHIFT_CRITERION environment variable.
 SHIFT_CRITERION = os.environ.get('SHIFT_CRITERION', 'weighted')
+# Diversified (capped-weight) regulator, after Balcan, Blum & Chen (AAMAS 2018).
+# GROUP_CAP_ALPHA = alpha in (0, 1]: group weights are restricted to w_g <= p_g / alpha (p_g = group share),
+# so the game's value is the CVaR_alpha of the population error over group-level reweightings:
+# alpha = 1 gives overall error, alpha <= min_g p_g gives minimax. None/unset = uncapped (original algorithm).
+GROUP_CAP_ALPHA = float(os.environ['GROUP_CAP_ALPHA']) if os.environ.get('GROUP_CAP_ALPHA') else None
+
+
+def project_capped_simplex(w, caps):
+    """KL projection of a positive vector onto {w : sum w = 1, 0 <= w <= caps} (requires sum(caps) >= 1)."""
+    w = np.asarray(w, dtype=float); caps = np.asarray(caps, dtype=float)
+    fixed = np.zeros(len(w), dtype=bool)
+    for _ in range(len(w) + 1):
+        free_mass = 1.0 - caps[fixed].sum()
+        out = np.where(fixed, caps, w * free_mass / max(w[~fixed].sum(), 1e-300))
+        over = (out > caps) & ~fixed
+        if not over.any():
+            return out
+        fixed |= over
+    return np.minimum(out, caps)
 
 
 def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scale_eta_by_label_range=True,
@@ -458,6 +477,8 @@ def do_learning(X, y, numsteps, grouplabels, a=1, b=0.5, equal_error=False, scal
                 else:  # Exponential Weights, Minmax algorithm
                     groupweights[i][t] = np.multiply(groupweights[i][t - 1], np.exp(eta * (grouperrs[i][t])))
                     groupweights[i][t] = groupweights[i][t] / np.sum(groupweights[i][t])  # normalize
+                    if GROUP_CAP_ALPHA is not None:  # diversified regulator: project onto capped simplex
+                        groupweights[i][t] = project_capped_simplex(groupweights[i][t], p[i] / GROUP_CAP_ALPHA)
 
             # Translate groups weights to sample weights for Learner
             for g in range(0, numgroups[i]):
