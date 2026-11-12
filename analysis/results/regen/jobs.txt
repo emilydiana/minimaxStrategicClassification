@@ -1,0 +1,13 @@
+Heart 1,1
+Credit 1,1,1,1
+COMPAS 1,1,1,1
+Communities 1,1,1,1
+Heart 1,0
+Heart 1,0.5
+Heart 0.5,1
+Credit 1,1,0,0
+Credit 1,0.5,0,0
+Credit 1,1,0.1,0.1
+COMPAS 0,1,0.75,0
+COMPAS 0.25,1,1,0.25
+COMPAS 1,1,0,0

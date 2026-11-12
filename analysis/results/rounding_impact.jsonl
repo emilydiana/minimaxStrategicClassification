@@ -1,0 +1,20 @@
+{"dataset": "Heart", "tau": 1.0, "fracs": [0.5, 1.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.51878125, "naive": 0.28281355932203456, "ours": 0.2565625}
+{"dataset": "Heart", "tau": 1.0, "fracs": [1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.51878125, "naive": 0.24532203389830504, "ours": 0.23476271186440711}
+{"dataset": "Credit", "tau": 1.0, "fracs": [1.0, 1.0, 0.0, 0.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.4731696969696973, "naive": 0.3868571428571488, "ours": 0.34693333333333326}
+{"dataset": "COMPAS", "tau": 1.0, "fracs": [0.0, 1.0, 0.75, 0.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.44990502035278196, "naive": 0.41321550946798885, "ours": 0.37807812500000115}
+{"dataset": "Communities", "tau": 1.0, "fracs": [1.0, 1.0, 1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.4755911016949156, "naive": 0.4412571428571437, "ours": 0.37557142857142917}
+{"dataset": "Heart", "tau": 1.0, "fracs": [0.5, 1.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.65625, "naive": 0.23715254237287933, "ours": 0.20327118644068085}
+{"dataset": "Heart", "tau": 1.0, "fracs": [1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.65625, "naive": 0.1876875, "ours": 0.15709375}
+{"dataset": "Credit", "tau": 1.0, "fracs": [1.0, 1.0, 0.0, 0.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.5787757575757686, "naive": 0.3868571428571488, "ours": 0.3756727272727199}
+{"dataset": "COMPAS", "tau": 1.0, "fracs": [0.0, 1.0, 0.75, 0.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.5312130257801931, "naive": 0.3760694319206556, "ours": 0.39171874999999395}
+{"dataset": "Communities", "tau": 1.0, "fracs": [1.0, 1.0, 1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.7966101694915161, "naive": 0.3367142857142931, "ours": 0.3367142857142931}
+{"dataset": "Heart", "tau": 3.0, "fracs": [0.5, 1.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.5400625, "naive": 0.5156875, "ours": 0.386305084745763}
+{"dataset": "Heart", "tau": 3.0, "fracs": [1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.5400625, "naive": 0.2444576271186431, "ours": 0.2419322033898296}
+{"dataset": "Credit", "tau": 3.0, "fracs": [1.0, 1.0, 0.0, 0.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.5589999999999996, "naive": 0.35714285714285215, "ours": 0.37835151515151605}
+{"dataset": "COMPAS", "tau": 3.0, "fracs": [0.0, 1.0, 0.75, 0.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.4932198100407061, "naive": 0.46603516681695195, "ours": 0.38931770833333657}
+{"dataset": "Communities", "tau": 3.0, "fracs": [1.0, 1.0, 1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": false, "nonstrategic": 0.4755911016949156, "naive": 0.4405714285714302, "ours": 0.38094285714285725}
+{"dataset": "Heart", "tau": 3.0, "fracs": [1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.6875, "naive": 0.1876875, "ours": 0.1876875}
+{"dataset": "Credit", "tau": 3.0, "fracs": [1.0, 1.0, 0.0, 0.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.7212121212121374, "naive": 0.36927878787878354, "ours": 0.37501818181817786}
+{"dataset": "Heart", "tau": 3.0, "fracs": [0.5, 1.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.6875, "naive": 0.65625, "ours": 0.38983050847457457}
+{"dataset": "COMPAS", "tau": 3.0, "fracs": [0.0, 1.0, 0.75, 0.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.6132971506105949, "naive": 0.4508422001803481, "ours": 0.4010416666666711}
+{"dataset": "Communities", "tau": 3.0, "fracs": [1.0, 1.0, 1.0, 1.0], "seed": 4235255, "T": 1000, "exact_response": true, "nonstrategic": 0.7966101694915161, "naive": 0.3367142857142931, "ours": 0.3367142857142931}
