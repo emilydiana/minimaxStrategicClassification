@@ -30,8 +30,13 @@ def strat_err(m, X, y, tv, exact):
     if exact:
         s = scores(m, X); pos = (s >= 0) | (-s < tv)
         return (pos != (y == 1)).astype(float)
-    E = np.zeros((1, len(y))); compute_model_errors(m, X, y, 0, E, '0/1 Loss', 'none', 1.0, True, tv)
-    return E[0]
+    # Legacy scoring from main (before the fix): project movers onto the boundary and re-predict,
+    # which rounding can leave just below zero.
+    w = m.regressor.coef_; raw = m.regressor.predict(X); nw = np.linalg.norm(w)
+    move = (np.abs(raw) / nw < tv) & (raw < 0)
+    Xs = np.copy(X); Xs[move] = X[move] - np.outer(raw / nw ** 2, w)[move]
+    yhat = m.predict(Xs).ravel()
+    return (y != yhat).astype(float)
 
 
 def burden(m, X, y, tv):
